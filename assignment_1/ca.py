@@ -54,12 +54,12 @@ class CASim(Model):
         The input state will be an array of 2r+1 items between 0 and k, the
         neighbourhood which the state of the new cell depends on."""
         reversed_ruleset = self.rule_set[::-1]
-        decimal = 0
+        base_index = 0
 
         for num in inp:
-            decimal = decimal * self.k + num
+            base_index = base_index * self.k + num
         
-        return reversed_ruleset[int(decimal)]
+        return reversed_ruleset[int(base_index)]
 
 
     def setup_initial_row(self):
