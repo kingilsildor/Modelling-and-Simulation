@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 
 from pyics import Model
 
@@ -8,11 +9,28 @@ def decimal_to_base_k(n, k):
     base-k equivalant.
 
     For example, for n=34 and k=3 this function should return [1, 0, 2, 1]."""
+    if n == 0:
+        return [0]
     result = []
     while n > 0:
         result.append(n % k)
         n //= k
     return result[::-1]
+
+def get_base_combinations(base, combination_length):
+    base_values = list(range(base))
+    base_combinations = list(itertools.product(base_values, repeat=combination_length))
+
+    return [list(combination) for combination in base_combinations]
+
+def call_lambda_function(sim, steps, rules, initial_rows):
+    for rule in range(rules):
+        sim.reset()
+        for initial in initial_rows:
+            sim.calculate_lambda(rule, initial)
+            for step in range(steps):
+                sim.step()
+        print(sim.get_cycle_len())     
 
 class CASim(Model):
     def __init__(self):
@@ -20,11 +38,12 @@ class CASim(Model):
 
         self.t = 0
         self.rule_set = []
+        self.cycle_len_arr = []
         self.config = None
 
         self.make_param('r', 1)
         self.make_param('k', 2)
-        self.make_param('width', 50)
+        self.make_param('width', 3)
         self.make_param('height', 50)
         self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
@@ -43,7 +62,6 @@ class CASim(Model):
         For example, for rule=34, k=3, r=1 this function should set rule_set to
         [0, ..., 0, 1, 0, 2, 1] (length 27). This means that for example
         [2, 2, 2] -> 0 and [0, 0, 1] -> 2."""
-        
         base_arr = decimal_to_base_k(self.rule, self.k)
         rule_arr = np.zeros(self.k ** (2 * self.r + 1))
         rule_arr[-len(base_arr):] = base_arr
@@ -60,6 +78,10 @@ class CASim(Model):
         for num in inp:
             base_index = base_index * self.k + num
         return reversed_ruleset[int(base_index)]
+    
+    def check_cycle_len(self, inp):
+        if not any((inp == sublist).all() for sublist in self.cycle_len_arr):
+            self.cycle_len_arr.append(inp.tolist())
 
     def setup_initial_row(self):
         """Returns an array of length `width' with the initial state for each of
@@ -79,6 +101,7 @@ class CASim(Model):
         rule number to a rule set."""
 
         self.t = 0
+        self.cycle_len_arr = []
         self.config = np.zeros([self.height, self.width])
         self.config[0, :] = self.setup_initial_row()
         self.build_rule_set()
@@ -113,10 +136,37 @@ class CASim(Model):
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
             self.config[self.t, patch] = self.check_rule(values)
+            self.check_cycle_len(values)
+            
+    def get_cycle_len(self):
+        return len(self.cycle_len_arr)
+    
+    def calculate_lambda(self, steps):
+        rules = self.k ** (self.k ** (2 * self.r + 1))
+        initial_rows = get_base_combinations(self.k, self.width)
+        lambda_dict = {}
+        for rule in range(rules):
+            sim.reset()
+            self.rule = rule
+            total_cycle_len = 0
+            
+            for initial_row in initial_rows:
+                self.config[0, :] = initial_row
+                
+                for step in range(steps):
+                    sim.step()
+                total_cycle_len += sim.get_cycle_len()
+    
+            lambda_dict[rule] =  round(total_cycle_len / len(initial_rows))
+        return lambda_dict
+                
 
+        
 
 if __name__ == '__main__':
+    steps, rules = 10**3, 256
     sim = CASim()
-    from pyics import GUI
-    cx = GUI(sim)
-    cx.start()
+    print(sim.calculate_lambda(10**3))
+    # from pyics import GUI
+    # cx = GUI(sim)
+    # cx.start()
