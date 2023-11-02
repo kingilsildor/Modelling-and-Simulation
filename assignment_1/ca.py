@@ -27,6 +27,7 @@ class CASim(Model):
         self.make_param('width', 50)
         self.make_param('height', 50)
         self.make_param('rule', 30, setter=self.setter_rule)
+        self.make_param('initial', 1)
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -58,17 +59,20 @@ class CASim(Model):
 
         for num in inp:
             base_index = base_index * self.k + num
-        
         return reversed_ruleset[int(base_index)]
-
 
     def setup_initial_row(self):
         """Returns an array of length `width' with the initial state for each of
         the cells in the first row. Values should be between 0 and k."""
-
-        first  = np.zeros(self.width)
-        first[self.width//2] = 1
-        return first
+        initial = None
+        if self.initial == 1:           
+            initial  = np.zeros(self.width)
+            initial[self.width//2] = 1
+        else:
+            np.random.seed(self.initial)
+            initial = np.random.randint(0, self.k, size=self.width)
+            
+        return initial
 
     def reset(self):
         """Initializes the configuration of the cells and converts the entered
