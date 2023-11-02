@@ -23,15 +23,6 @@ def get_base_combinations(base, combination_length):
 
     return [list(combination) for combination in base_combinations]
 
-def call_lambda_function(sim, steps, rules, initial_rows):
-    for rule in range(rules):
-        sim.reset()
-        for initial in initial_rows:
-            sim.calculate_lambda(rule, initial)
-            for step in range(steps):
-                sim.step()
-        print(sim.get_cycle_len())     
-
 class CASim(Model):
     def __init__(self):
         Model.__init__(self)
