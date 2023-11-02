@@ -18,6 +18,7 @@ def decimal_to_base_k(n, k):
     return result[::-1]
 
 def get_base_combinations(base, combination_length):
+    "Generate all possible combinations of values in a given base-k for a specified width."
     base_values = list(range(base))
     base_combinations = list(itertools.product(base_values, repeat=combination_length))
 
@@ -35,7 +36,7 @@ class CASim(Model):
         self.make_param('r', 1)
         self.make_param('k', 2)
         self.make_param('width', 3)
-        self.make_param('height', 50)
+        self.make_param('height', 10 ** 6)
         self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
 
@@ -130,9 +131,13 @@ class CASim(Model):
             self.check_cycle_len(values)
             
     def get_cycle_len(self):
+        """Get the length of the cycle recorded in the 'cycle_len_arr' attribute."""
         return len(self.cycle_len_arr)
     
-    def calculate_lambda(self, steps):
+    def calculate_lambda(self):
+        """Calculate and return a dictionary of average lambda values for a given Cellular Automaton rule
+        based on all the possible initial states. """
+
         rules = self.k ** (self.k ** (2 * self.r + 1))
         initial_rows = get_base_combinations(self.k, self.width)
         lambda_dict = {}
@@ -144,20 +149,18 @@ class CASim(Model):
             for initial_row in initial_rows:
                 self.config[0, :] = initial_row
                 
-                for step in range(steps):
+                for step in range(self.height):
                     sim.step()
                 total_cycle_len += sim.get_cycle_len()
     
             lambda_dict[rule] =  round(total_cycle_len / len(initial_rows))
-        return lambda_dict
-                
-
-        
+        return lambda_dict                
+      
 
 if __name__ == '__main__':
-    steps, rules = 10**3, 256
     sim = CASim()
-    print(sim.calculate_lambda(10**3))
-    # from pyics import GUI
-    # cx = GUI(sim)
-    # cx.start()
+    print(sim.calculate_lambda())
+    
+    from pyics import GUI
+    cx = GUI(sim)
+    cx.start()
