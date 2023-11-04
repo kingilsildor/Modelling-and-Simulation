@@ -39,6 +39,7 @@ class CASim(Model):
         self.make_param('height', 10 ** 6)
         self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
+        
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -138,7 +139,8 @@ class CASim(Model):
         """Calculate and return a dictionary of average lambda values for a given Cellular Automaton rule
         based on all the possible initial states. """
 
-        rules = self.k ** (self.k ** (2 * self.r + 1))
+
+        # Get all the possible combinations given base-k and width
         initial_rows = get_base_combinations(self.k, self.width)
         lambda_dict = {}
         for rule in range(rules):
@@ -147,12 +149,14 @@ class CASim(Model):
             total_cycle_len = 0
             
             for initial_row in initial_rows:
+                # Change the initial row
                 self.config[0, :] = initial_row
                 
                 for step in range(self.height):
                     sim.step()
                 total_cycle_len += sim.get_cycle_len()
-    
+                
+            # Calculate the average cycle length for each rule
             lambda_dict[rule] =  round(total_cycle_len / len(initial_rows))
         return lambda_dict                
       

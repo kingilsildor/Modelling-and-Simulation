@@ -243,6 +243,7 @@ class CASim(Model):
         fig.show()
 
 
+
 if __name__ == '__main__':
     sim = CASim()
     from pyics import GUI
