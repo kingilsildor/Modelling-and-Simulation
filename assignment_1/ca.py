@@ -37,7 +37,7 @@ class CASim(Model):
         self.make_param('k', 2)
         self.make_param('width', 3)
         self.make_param('height', 10 ** 6)
-        self.make_param('rule', 30, setter=self.setter_rule)
+        self.make_param('rule', 0, setter=self.setter_rule)
         self.make_param('initial', 1)
         
 
