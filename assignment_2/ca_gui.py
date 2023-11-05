@@ -1,5 +1,4 @@
 import numpy as np
-import itertools
 
 from pyics import Model
 
@@ -9,16 +8,21 @@ def decimal_to_base_k(n, k):
     base-k equivalant.
 
     For example, for n=34 and k=3 this function should return [1, 0, 2, 1]."""
-
+    
+    if n == 0:
+        return [0]
+    
     digits = []
     while n > 0:
-        digits.append(n%k)
+        digits.append(n % k)
         n //= k
 
     return digits[::-1]
 
 def get_base_combinations(base, combination_length):
     "Generate all possible combinations of values in a given base-k for a specified width."
+    
+    import itertools
     base_values = list(range(base))
     base_combinations = list(itertools.product(base_values, repeat=combination_length))
 
@@ -30,6 +34,7 @@ class CASim(Model):
         Model.__init__(self)
 
         self.t = 0
+        self.iterations_cycle = 10 ** 6
         self.rule_set = []
         self.all_rules = []
         self.all_inits = []
@@ -42,6 +47,7 @@ class CASim(Model):
         self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
         self.make_param('plot', True)
+        
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -133,67 +139,46 @@ class CASim(Model):
             values = self.config[self.t - 1, indices]
             self.config[self.t, patch] = self.check_rule(values)   
 
-
-    def build_rule_set2(self, rule):
-        n = self.setter_rule(rule)
-        rule_set_size = self.k ** (2 * self.r + 1)
-        rule_in_base = decimal_to_base_k(n, self.k)
-        return [0 for x in range((rule_set_size - len(rule_in_base)))] + rule_in_base
-
-    def check_rule2(self, inp, rule):
-        ruleset = self.build_rule_set2(rule)[::-1]
-        base_k = self.k
-        decimal = 0
-
-        for num in inp:
-            decimal = decimal * base_k + num
-
-        return ruleset[int(decimal)]
     
     def make_new_gen(self, row, rule):
+        # self.rule = rule
+        self.build_rule_set()
         new_gen_row = []
         length_row = len(row)
         
         for num in range(length_row):
             if not num:
                 current_row = [row[length_row-1]] + row[:length_row-2]
-                new_value = self.check_rule2(current_row, rule)
+                new_value = self.check_rule(current_row)
                 new_gen_row.append(new_value)
             elif num == length_row-1:
                 current_row = row[length_row-2:length_row-1] + row[:length_row-3]
-                new_value = self.check_rule2(current_row, rule)
+                new_value = self.check_rule(current_row)
                 new_gen_row.append(new_value)
             else:
-                new_value = self.check_rule2(row, rule)
+                new_value = self.check_rule(row)
                 new_gen_row.append(new_value)
-        
         return new_gen_row
     
-    def create_graph(self):
-        import pandas as pd
-
-        rules = [i for i in range(256)]
-        rules = self.k ** self.k ** (self.r * 2 + 1)
+    def calculate_lambda(self):        
         system_length = self.r*2 +1
-
-        rows = get_base_combinations(self.k, system_length)
-        max_n = 10**6
-        all_inits = []
-
-        for row in rows:
+        self.all_rules = [rule for rule in range(self.k ** self.k ** (system_length))]              
+        all_base_combinations = get_base_combinations(self.k, system_length)
+        
+        for start_row in all_base_combinations:
             cycle_lengths = []
 
-            for rule in range(256):
+            for rule in self.all_rules:
         
-                generations = [row]
-                new_row = row
+                generations = [start_row]
+                new_row = start_row
                 n = 0 
 
-                while n < max_n:
+                while n < self.iterations_cycle:
                     new_row = self.make_new_gen(new_row, rule)
 
                     if new_row in generations:
-                        cycle_length = len(generations) - (generations.index(row))
+                        cycle_length = len(generations) - (generations.index(start_row))
                         cycle_lengths.append(cycle_length)
                         break
                     generations.append(new_row)
@@ -201,14 +186,18 @@ class CASim(Model):
                 else:
                     cycle_lengths.append(0)
 
-            all_inits.append(cycle_lengths)
+            self.all_inits.append(cycle_lengths)       
+
+    def create_graph(self):
         
-        values = np.array(all_inits).T.mean(axis=1)
-        all_std = [np.std(row) for row in np.array(all_inits).T]
-        df = pd.DataFrame({'mean': values, 'std': all_std, 'rule': rules})
-            
-        
+        import pandas as pd
         import plotly.graph_objects as go
+        
+        self.calculate_lambda()
+                
+        values = np.array(self.all_inits).T.mean(axis=1)
+        all_std = [np.std(row) for row in np.array(self.all_inits).T]
+        df = pd.DataFrame({'mean': values, 'std': all_std, 'rule': self.all_rules})              
 
         fig = go.Figure()
 
@@ -232,7 +221,7 @@ class CASim(Model):
         ))
 
         fig.update_layout(
-            title=f'Scatter plot for mean cycle length of Wolfram rules 0-255 with standard deviations and system length {system_length}',
+            title=f'Scatter plot for mean cycle length of Wolfram rules 0-255 with standard deviations and system length {self.r*2 +1}',
             scene=dict(
                 xaxis_title='Rule',
                 yaxis_title='Cycle length'
@@ -242,6 +231,8 @@ class CASim(Model):
         )
 
         fig.show()
+        self.plot = False
+        self.reset()
 
 
 if __name__ == '__main__':
