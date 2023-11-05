@@ -1,0 +1,54 @@
+\documentclass{article}
+
+%Hiermee zet je de taal van het document op Nederlands, zodat de spellingscontrole van LaTeX werkt. Daarnaast komen ook automatische koppen als inhoudsopgave en referenties in het Nederlands in de tekst
+\usepackage[dutch]{babel}
+\addto{\captionsdutch}{\renewcommand{\abstractname}{Abstract}}
+
+%Deze packages zorgen ervoor dat jouw referenties in APA format weergegeven worden
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{apalike}
+\bibliographystyle{apalike}
+
+%Hierdoor worden speciale tekens als -/'" juist weergegeven in de tekst
+\usepackage[utf8]{inputenc}
+
+%Deze commando' s zorgen dat de titel en auteur correct op de voorpagina komen
+\usepackage[T1]{fontenc}
+\usepackage{authblk}
+\renewcommand\Affilfont{\itshape\small}
+
+%Multicol kan gebruikt worden om een stuk tekst op te delen in twee kolommen
+\usepackage{multicol}
+
+%Onderstaande packages zorgen ervoor dat afbeeldingen gebruikt kunnen worden en dat je captions en subcaptions kan gebruiken
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\graphicspath{ {images/} }
+\usepackage{float}
+\usepackage[font=small,labelfont=bf]{caption}
+
+%Minted is handig om te gebruiken wanneer je programmeercode wil weergeven in een verslag
+\usepackage{minted}
+
+%Hier begint het document en worden de verschillende pagina 's toegevoegd en gescheiden van elkaar door page breaks
+\begin{document}
+
+\input{voorblad}
+\pagebreak
+
+%Hiermee wordt automatisch een inhoudsopgave aangemaakt
+\tableofcontents
+\pagebreak
+
+\input{inleiding}
+\input{methode}
+\input{resultaten}
+\input{conclusie}
+
+%Hier wordt de bibliografie toegevoegd aan het eind van het document en in de inhoudsopgave
+\addcontentsline{toc}{section}{Referenties}
+\bibliography{biblio}
+
+\end{document}

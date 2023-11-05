@@ -173,7 +173,6 @@ class CASim(Model):
         import pandas as pd
 
         rules = [i for i in range(256)]
-        rules = self.k ** self.k ** (self.r * 2 + 1)
         system_length = self.r*2 +1
 
         rows = get_base_combinations(self.k, system_length)
@@ -242,6 +241,7 @@ class CASim(Model):
         )
 
         fig.show()
+
 
 
 if __name__ == '__main__':
