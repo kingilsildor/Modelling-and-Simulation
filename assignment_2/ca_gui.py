@@ -169,7 +169,8 @@ class CASim(Model):
         return new_gen_row
     
     def calculate_cycle_legth(self):
-        self.all_rules = [i for i in range(self.k ** self.k ** (self.r * 2 + 1))]
+        rule_amount = self.k ** self.k ** (self.r * 2 + 1)
+        self.all_rules = [i for i in range(rule_amount)]
         system_length = self.r*2 + 1
 
         rows = get_base_combinations(self.k, system_length)
@@ -178,7 +179,7 @@ class CASim(Model):
         for row in rows:
             cycle_lengths = []
 
-            for rule in range(256):
+            for rule in range(rule_amount):
         
                 generations = [row]
                 new_row = row
@@ -248,6 +249,8 @@ class CASim(Model):
     def calculate_lambda(self):
         # Pick an arbitrary state
         sq = np.random.randint(0, self.k, size=self.width)
+        all_possible_rules = (self.k ** (self.k ** (self.r * 2 + 1)))
+        lambda_delta = (all_possible_rules - n) / all_possible_rules
     
 
 
