@@ -1,5 +1,5 @@
 import numpy as np
-import itertools
+
 
 from pyics import Model
 
@@ -11,14 +11,17 @@ def decimal_to_base_k(n, k):
     For example, for n=34 and k=3 this function should return [1, 0, 2, 1]."""
     if n == 0:
         return [0]
+    
     result = []
     while n > 0:
         result.append(n % k)
         n //= k
+        
     return result[::-1]
 
 def get_base_combinations(base, combination_length):
     "Generate all possible combinations of values in a given base-k for a specified width."
+    import itertools
     base_values = list(range(base))
     base_combinations = list(itertools.product(base_values, repeat=combination_length))
 
