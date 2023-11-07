@@ -102,6 +102,7 @@ class CASim(Model):
         if self.plot:
             self.create_graph()
             self.plot = False
+        self.calculate_lambda()
 
     def draw(self):
         """Draws the current state of the grid."""
@@ -155,16 +156,20 @@ class CASim(Model):
         length_row = len(row)
         
         for num in range(length_row):
+            
             if not num:
-                current_row = [row[length_row-1]] + row[:length_row-2]
+                current_row = [row[length_row-1]] + row[:num+1]
+                
                 new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
             elif num == length_row-1:
-                current_row = row[length_row-2:length_row-1] + row[:length_row-3]
+                current_row = row[length_row-2:length_row-1] + [row[0]]
                 new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
             else:
-                new_value = self.check_rule2(row, rule)
+                current_row = row[num-1:num+2]
+                
+                new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
         
         return new_gen_row
@@ -248,11 +253,13 @@ class CASim(Model):
         
     def calculate_lambda(self):
         # Pick an arbitrary state
-        sq = np.random.randint(0, self.k, size=self.width)
+        sq = np.random.randint(0, self.k, size=3)
+        print(sq)
+        print("Hier: ", self.count_same(sq))
 
     
     def count_same(self, state):
-        return sum(1 for x in range(256) if state == self.make_new_gen(state, x))
+        return sum(1 for x in range(256) if all(state == self.make_new_gen(state, x)))
 
     
 
@@ -262,6 +269,6 @@ if __name__ == '__main__':
     from pyics import GUI
     cx = GUI(sim)
     cx.start()
-        
+
 
 
