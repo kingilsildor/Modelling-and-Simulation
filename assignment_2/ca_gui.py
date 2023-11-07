@@ -2,7 +2,6 @@ import numpy as np
 
 from pyics import Model
 
-
 def decimal_to_base_k(n, k):
     """Converts a given decimal (i.e. base-10 integer) to a list containing the
     base-k equivalant.
