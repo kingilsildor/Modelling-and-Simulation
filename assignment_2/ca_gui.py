@@ -46,9 +46,6 @@ class CASim(Model):
         self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
         self.make_param('plot', False)
-        self.make_param('table', False)
-        
-        print(self.calculate_lambda())
         
 
     def setter_rule(self, val):
@@ -77,7 +74,6 @@ class CASim(Model):
         neighbourhood which the state of the new cell depends on."""        
         reversed_ruleset = self.rule_set[::-1]
         base_index = 0
-
         for num in inp:
             base_index = base_index * self.k + num
         return reversed_ruleset[int(base_index)]
@@ -141,14 +137,18 @@ class CASim(Model):
         rule_set_size = self.k ** (2 * self.r + 1)
         rule_in_base = decimal_to_base_k(n, self.k)
         return [0 for x in range((rule_set_size - len(rule_in_base)))] + rule_in_base
+    
 
     def check_rule2(self, inp, rule):
         ruleset = self.build_rule_set2(rule)[::-1]
+        print(inp)
+        # print(ruleset, inp)
         base_k = self.k
         decimal = 0
-        print(inp)        
+
         for num in inp:
             decimal = decimal * base_k + num
+
         return ruleset[int(decimal)]
     
     def make_new_gen(self, row, rule):
@@ -157,22 +157,22 @@ class CASim(Model):
         
         for num in range(length_row):
             if not num:
-                current_row = [row[length_row-1]] + row[:length_row-2]
+                current_row = [row[length_row-1]] + row[length_row-3:length_row-2]
                 new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
             elif num == length_row-1:
-                current_row = row[length_row-2:length_row-1] + row[:length_row-3]
+                current_row = row[length_row-2:length_row-1] + [row[length_row-3]]
                 new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
             else:
-                new_value = self.check_rule2(row, rule)
+                current_row = row[length_row-1:length_row+1]
+                new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
         
         return new_gen_row
     
     def calculate_cycle_legth(self):
-        rule_amount = self.k ** self.k ** (self.r * 2 + 1)
-        self.all_rules = [i for i in range(rule_amount)]
+        self.all_rules = [i for i in range(self.k ** self.k ** (self.r * 2 + 1))]
         system_length = self.r*2 + 1
 
         rows = get_base_combinations(self.k, system_length)
@@ -181,7 +181,7 @@ class CASim(Model):
         for row in rows:
             cycle_lengths = []
 
-            for rule in range(rule_amount):
+            for rule in range(256):
         
                 generations = [row]
                 new_row = row
@@ -248,24 +248,24 @@ class CASim(Model):
 
         fig.show()
         
-    def count_same(self, state):
-        print(state)
-        return sum(1 for x in range(256) if state == self.make_new_gen(state, x))
-        
     def calculate_lambda(self):
         # Pick an arbitrary state
-        sq = np.random.randint(0, self.k, size=self.width)
-        # all_possible_rules = (self.k ** (self.k ** (self.r * 2 + 1)))
-        n = self.count_same(sq)
-        # lambda_delta = (all_possible_rules - n) / all_possible_rules   
+        sq = np.random.randint(0, self.k, size=self.width).tolist()
+        self.count_same([1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0])
+        # print(sq)
+        
+    
+    def count_same(self, state):
+        return sum(1 for x in range(256) if state == self.make_new_gen(state, x))
+
     
 
 
 if __name__ == '__main__':
     sim = CASim()
+    sim.calculate_lambda()
     from pyics import GUI
     cx = GUI(sim)
     cx.start()
         
-
 
