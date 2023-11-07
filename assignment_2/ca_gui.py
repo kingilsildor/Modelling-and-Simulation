@@ -48,6 +48,8 @@ class CASim(Model):
         self.make_param('plot', False)
         self.make_param('table', False)
         
+        print(self.calculate_lambda())
+        
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -144,10 +146,9 @@ class CASim(Model):
         ruleset = self.build_rule_set2(rule)[::-1]
         base_k = self.k
         decimal = 0
-
+        print(inp)        
         for num in inp:
             decimal = decimal * base_k + num
-
         return ruleset[int(decimal)]
     
     def make_new_gen(self, row, rule):
@@ -248,16 +249,15 @@ class CASim(Model):
         fig.show()
         
     def count_same(self, state):
+        print(state)
         return sum(1 for x in range(256) if state == self.make_new_gen(state, x))
         
     def calculate_lambda(self):
         # Pick an arbitrary state
         sq = np.random.randint(0, self.k, size=self.width)
-        all_possible_rules = (self.k ** (self.k ** (self.r * 2 + 1)))
+        # all_possible_rules = (self.k ** (self.k ** (self.r * 2 + 1)))
         n = self.count_same(sq)
-        lambda_delta = (all_possible_rules - n) / all_possible_rules   
-
-
+        # lambda_delta = (all_possible_rules - n) / all_possible_rules   
     
 
 
