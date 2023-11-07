@@ -95,6 +95,12 @@ class CASim(Model):
         self.config = np.zeros([self.height, self.width])
         self.config[0, :] = self.setup_initial_row()
         self.build_rule_set()
+        
+        if self.plot:
+            self.create_graph()
+            self.plot = False
+        self.calculate_lambda()
+
 
     def draw(self):
         """Draws the current state of the grid."""
@@ -128,33 +134,110 @@ class CASim(Model):
             self.config[self.t, patch] = self.check_rule(values)
         print(self.config[self.t])
     
-    def calculate_cycle_len(self):
-        all_possible_rules = self.k ** self.k ** (self.r * 2 + 1)
-        system_length = self.r*2 +1
-        all_possible_rows = get_base_combinations(self.k, system_length)
-        time = 0
-        all_inits = []
+
+    def make_new_gen(self, row, rule):
+        new_gen_row = []
+        length_row = len(row)
         
-        # for row in all_possible_rows:
-        #     cycle_lengths = []
+        for num in range(length_row):
             
-        #     for rule in range(all_possible_rules):
-        #         generations = []
+            if not num:
+                current_row = [row[length_row-1]] + row[:num+1]
                 
-        #         while time < self.height:
-        #             new_row = None                    
-        #             if new_row in generations:
-        #                 cycle_length = len(generations) - (generations.index(row))
-        #                 cycle_lengths.append(cycle_length)
-        #                 break
-        #             else:
-        #                 generations.append(new_row)
-        #             time += 1
-        #         else:
-        #             cycle_lengths.append(0)
-        #     all_inits.append(cycle_length)
-                                         
+                new_value = self.check_rule2(current_row, rule)
+                new_gen_row.append(new_value)
+            elif num == length_row-1:
+                current_row = row[length_row-2:length_row-1] + [row[0]]
+                new_value = self.check_rule2(current_row, rule)
+                new_gen_row.append(new_value)
+            else:
+                current_row = row[num-1:num+2]
                 
+                new_value = self.check_rule2(current_row, rule)
+                new_gen_row.append(new_value)
+        
+        return new_gen_row
+    
+    def calculate_cycle_legth(self):
+        self.all_rules = [i for i in range(self.k ** self.k ** (self.r * 2 + 1))]
+        system_length = self.r*2 + 1
+
+        rows = get_base_combinations(self.k, system_length)
+        max_n = 10**6
+
+        for row in rows:
+            cycle_lengths = []
+
+            for rule in range(256):
+        
+                generations = [row]
+                new_row = row
+                n = 0 
+
+                while n < max_n:
+                    new_row = self.make_new_gen(new_row, rule)
+
+                    if new_row in generations:
+                        cycle_length = len(generations) - (generations.index(row))
+                        cycle_lengths.append(cycle_length)
+                        break
+                    generations.append(new_row)
+                    n+=1
+                else:
+                    cycle_lengths.append(0)
+
+            self.all_inits.append(cycle_lengths)
+            
+    def create_dataframe(self):
+        self.calculate_cycle_legth()
+
+    def create_graph(self):    
+        import plotly.graph_objects as go
+        
+        df = self.create_dataframe()        
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=df['rule'],
+            y=df['mean'],
+            mode='markers',
+            marker=dict(
+                color=df['mean'],
+                colorscale='Viridis',
+                reversescale=True,
+                colorbar=dict(title='Cycle length'),
+                size=7 
+            ),
+            name='Mean Values',
+            error_y=dict(
+                type='data',
+                array=df['std'],
+                visible=True
+            )
+        ))
+
+        fig.update_layout(
+            title=f'Scatter plot for mean cycle length of Wolfram rules 0-255 with standard deviations and system length {self.r*2 +1}',
+            scene=dict(
+                xaxis_title='Rule',
+                yaxis_title='Cycle length'
+            ),
+            width=1600,
+            height=800
+        )
+
+        fig.show()
+        
+    def calculate_lambda(self):
+        # Pick an arbitrary state
+        sq = np.random.randint(0, self.k, size=3)
+        print(sq)
+        print("Hier: ", self.count_same(sq))
+
+    
+    def count_same(self, state):
+        return sum(1 for x in range(256) if all(state == self.make_new_gen(state, x)))
 
 if __name__ == '__main__':
     sim = CASim()
@@ -162,3 +245,4 @@ if __name__ == '__main__':
     from pyics import GUI
     cx = GUI(sim)
     cx.start()
+
