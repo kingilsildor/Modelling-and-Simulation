@@ -7,8 +7,7 @@ def decimal_to_base_k(n, k):
     """Converts a given decimal (i.e. base-10 integer) to a list containing the
     base-k equivalant.
 
-    For example, for n=34 and k=3 this function should return [1, 0, 2, 1]."""
-    
+    For example, for n=34 and k=3 this function should return [1, 0, 2, 1]."""    
     if n == 0:
         return [0]
     
@@ -20,8 +19,7 @@ def decimal_to_base_k(n, k):
     return digits[::-1]
 
 def get_base_combinations(base, combination_length):
-    "Generate all possible combinations of values in a given base-k for a specified width."
-    
+    "Generate all possible combinations of values in a given base-k for a specified width."    
     import itertools
     base_values = list(range(base))
     base_combinations = list(itertools.product(base_values, repeat=combination_length))
@@ -51,8 +49,7 @@ class CASim(Model):
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
-        maximum possible rule number."""
-        
+        maximum possible rule number."""        
         rule_set_size = self.k ** (2 * self.r + 1)
         max_rule_number = self.k ** rule_set_size
         return max(0, min(val, max_rule_number - 1))
@@ -63,8 +60,7 @@ class CASim(Model):
 
         For example, for rule=34, k=3, r=1 this function should set rule_set to
         [0, ..., 0, 1, 0, 2, 1] (length 27). This means that for example
-        [2, 2, 2] -> 0 and [0, 0, 1] -> 2."""
-        
+        [2, 2, 2] -> 0 and [0, 0, 1] -> 2."""        
         base_arr = decimal_to_base_k(self.rule, self.k)
         rule_arr = np.zeros(self.k ** (2 * self.r + 1))
         rule_arr[-len(base_arr):] = base_arr
@@ -74,8 +70,7 @@ class CASim(Model):
         """Returns the new state based on the input states.
 
         The input state will be an array of 2r+1 items between 0 and k, the
-        neighbourhood which the state of the new cell depends on."""
-        
+        neighbourhood which the state of the new cell depends on."""        
         reversed_ruleset = self.rule_set[::-1]
         base_index = 0
 
@@ -85,8 +80,7 @@ class CASim(Model):
 
     def setup_initial_row(self):
         """Returns an array of length `width' with the initial state for each of
-        the cells in the first row. Values should be between 0 and k."""
-        
+        the cells in the first row. Values should be between 0 and k."""        
         initial = None
         if self.initial == 1:           
             initial  = np.zeros(self.width)
@@ -99,7 +93,6 @@ class CASim(Model):
     def reset(self):
         """Initializes the configuration of the cells and converts the entered
         rule number to a rule set."""
-
         self.t = 0
         self.config = np.zeros([self.height, self.width])
         self.config[0, :] = self.setup_initial_row()
@@ -110,7 +103,6 @@ class CASim(Model):
 
     def draw(self):
         """Draws the current state of the grid."""
-
         import matplotlib
         import matplotlib.pyplot as plt
 
@@ -162,7 +154,7 @@ class CASim(Model):
                 new_gen_row.append(new_value)
         return new_gen_row
     
-    def calculate_lambda(self):        
+    def calculate_cyclelength(self):        
         system_length = self.r*2 +1
         self.all_rules = [rule for rule in range(self.k ** self.k ** (system_length))]              
         all_base_combinations = get_base_combinations(self.k, system_length)
@@ -190,12 +182,11 @@ class CASim(Model):
 
             self.all_inits.append(cycle_lengths)       
 
-    def create_graph(self):
-        
+    def create_graph(self):        
         import pandas as pd
         import plotly.graph_objects as go
         
-        self.calculate_lambda()
+        self.calculate_cyclelength()
                 
         values = np.array(self.all_inits).T.mean(axis=1)
         all_std = [np.std(row) for row in np.array(self.all_inits).T]
