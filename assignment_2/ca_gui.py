@@ -2,6 +2,7 @@ import numpy as np
 
 from pyics import Model
 
+
 def decimal_to_base_k(n, k):
     """Converts a given decimal (i.e. base-10 integer) to a list containing the
     base-k equivalant.
@@ -12,9 +13,9 @@ def decimal_to_base_k(n, k):
     
     result = []
     while n > 0:
-        result.append(n % k)
+        result.append(n%k)
         n //= k
-        
+
     return result[::-1]
 
 def get_base_combinations(base, combination_length):
@@ -25,22 +26,22 @@ def get_base_combinations(base, combination_length):
 
     return [list(combination) for combination in base_combinations]
 
+
 class CASim(Model):
     def __init__(self):
         Model.__init__(self)
 
         self.t = 0
         self.rule_set = []
-        self.cycle_len_arr = []
         self.config = None
 
         self.make_param('r', 1)
         self.make_param('k', 2)
         self.make_param('width', 50)
         self.make_param('height', 50)
-        self.make_param('rule', 0, setter=self.setter_rule)
+        self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
-        
+    
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -56,11 +57,11 @@ class CASim(Model):
         For example, for rule=34, k=3, r=1 this function should set rule_set to
         [0, ..., 0, 1, 0, 2, 1] (length 27). This means that for example
         [2, 2, 2] -> 0 and [0, 0, 1] -> 2."""
-        base_arr = decimal_to_base_k(self.rule, self.k)
-        rule_arr = np.zeros(self.k ** (2 * self.r + 1))
-        rule_arr[-len(base_arr):] = base_arr
-        self.rule_set = rule_arr
-
+        n = self.rule
+        rule_set_size = self.k ** (2 * self.r + 1)
+        rule_in_base = decimal_to_base_k(n, self.k)
+        self.rule_set = [0 for x in range((rule_set_size - len(rule_in_base)))] + rule_in_base
+        
     def check_rule(self, inp):
         """Returns the new state based on the input states.
 
@@ -70,12 +71,8 @@ class CASim(Model):
         base_index = 0
 
         for num in inp:
-            base_index = base_index * self.k + num
+            base_index = base_index * self.k + num        
         return reversed_ruleset[int(base_index)]
-    
-    def check_cycle_len(self, inp):
-        if not any((inp == sublist).all() for sublist in self.cycle_len_arr):
-            self.cycle_len_arr.append(inp.tolist())
 
     def setup_initial_row(self):
         """Returns an array of length `width' with the initial state for each of
@@ -95,7 +92,6 @@ class CASim(Model):
         rule number to a rule set."""
 
         self.t = 0
-        self.cycle_len_arr = []
         self.config = np.zeros([self.height, self.width])
         self.config[0, :] = self.setup_initial_row()
         self.build_rule_set()
@@ -129,10 +125,40 @@ class CASim(Model):
             indices = [i % self.width
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
-            self.config[self.t, patch] = self.check_rule(values)      
+            self.config[self.t, patch] = self.check_rule(values)
+        print(self.config[self.t])
+    
+    def calculate_cycle_len(self):
+        all_possible_rules = self.k ** self.k ** (self.r * 2 + 1)
+        system_length = self.r*2 +1
+        all_possible_rows = get_base_combinations(self.k, system_length)
+        time = 0
+        all_inits = []
+        
+        # for row in all_possible_rows:
+        #     cycle_lengths = []
+            
+        #     for rule in range(all_possible_rules):
+        #         generations = []
+                
+        #         while time < self.height:
+        #             new_row = None                    
+        #             if new_row in generations:
+        #                 cycle_length = len(generations) - (generations.index(row))
+        #                 cycle_lengths.append(cycle_length)
+        #                 break
+        #             else:
+        #                 generations.append(new_row)
+        #             time += 1
+        #         else:
+        #             cycle_lengths.append(0)
+        #     all_inits.append(cycle_length)
+                                         
+                
 
 if __name__ == '__main__':
-    sim = CASim()   
+    sim = CASim()
+    sim.calculate_cycle_len()
     from pyics import GUI
     cx = GUI(sim)
     cx.start()
