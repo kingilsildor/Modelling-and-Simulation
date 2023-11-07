@@ -46,6 +46,7 @@ class CASim(Model):
         self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
         self.make_param('plot', False)
+        self.make_param('table', False)
         
 
     def setter_rule(self, val):
@@ -246,11 +247,17 @@ class CASim(Model):
 
         fig.show()
         
+    def count_same(self, state):
+        return sum(1 for x in range(256) if state == self.make_new_gen(state, x))
+        
     def calculate_lambda(self):
         # Pick an arbitrary state
         sq = np.random.randint(0, self.k, size=self.width)
         all_possible_rules = (self.k ** (self.k ** (self.r * 2 + 1)))
-        lambda_delta = (all_possible_rules - n) / all_possible_rules
+        n = self.count_same(sq)
+        lambda_delta = (all_possible_rules - n) / all_possible_rules   
+
+
     
 
 
@@ -259,3 +266,6 @@ if __name__ == '__main__':
     from pyics import GUI
     cx = GUI(sim)
     cx.start()
+
+
+
