@@ -41,7 +41,7 @@ class CASim(Model):
         self.make_param('height', 50)
         self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
-        self.make_param('plot', True)
+
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
