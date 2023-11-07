@@ -245,4 +245,3 @@ if __name__ == '__main__':
     from pyics import GUI
     cx = GUI(sim)
     cx.start()
-
