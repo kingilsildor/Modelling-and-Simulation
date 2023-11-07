@@ -244,6 +244,11 @@ class CASim(Model):
         )
 
         fig.show()
+        
+    def calculate_lambda(self):
+        # Pick an arbitrary state
+        sq = np.random.randint(0, self.k, size=self.width)
+    
 
 
 if __name__ == '__main__':
