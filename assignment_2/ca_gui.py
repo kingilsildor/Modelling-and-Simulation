@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from pyics import Model
 
@@ -167,15 +168,12 @@ class CASim(Model):
         
         return new_gen_row
     
-    def create_graph(self):
-        import pandas as pd
-
-        rules = [i for i in range(self.k ** self.k ** (self.r * 2 + 1))]
-        system_length = self.r*2 +1
+    def calculate_cycle_legth(self):
+        self.all_rules = [i for i in range(self.k ** self.k ** (self.r * 2 + 1))]
+        system_length = self.r*2 + 1
 
         rows = get_base_combinations(self.k, system_length)
         max_n = 10**6
-        all_inits = []
 
         for row in rows:
             cycle_lengths = []
@@ -198,14 +196,21 @@ class CASim(Model):
                 else:
                     cycle_lengths.append(0)
 
-            all_inits.append(cycle_lengths)
-        
-        values = np.array(all_inits).T.mean(axis=1)
-        all_std = [np.std(row) for row in np.array(all_inits).T]
-        df = pd.DataFrame({'mean': values, 'std': all_std, 'rule': rules})
+            self.all_inits.append(cycle_lengths)
             
+    def create_dataframe(self):
+        self.calculate_cycle_legth()
         
+        values = np.array(self.all_inits).T.mean(axis=1)
+        all_std = [np.std(row) for row in np.array(self.all_inits).T]
+        df = pd.DataFrame({'mean': values, 'std': all_std, 'rule': self.all_rules}) 
+          
+        return df        
+            
+    def create_graph(self):    
         import plotly.graph_objects as go
+        
+        df = self.create_dataframe()        
 
         fig = go.Figure()
 
@@ -229,7 +234,7 @@ class CASim(Model):
         ))
 
         fig.update_layout(
-            title=f'Scatter plot for mean cycle length of Wolfram rules 0-255 with standard deviations and system length {system_length}',
+            title=f'Scatter plot for mean cycle length of Wolfram rules 0-255 with standard deviations and system length {self.r*2 +1}',
             scene=dict(
                 xaxis_title='Rule',
                 yaxis_title='Cycle length'
