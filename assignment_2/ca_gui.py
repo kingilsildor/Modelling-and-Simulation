@@ -255,6 +255,8 @@ class CASim(Model):
     def calculate_lambda(self):
         # Pick an arbitrary state
         sq = np.random.randint(0, self.k, self.width)
+        
+        # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
         n = self.count_same(sq)
         lambda_delta = (self.max_rule_number - n) / self.max_rule_number
         print(lambda_delta)
