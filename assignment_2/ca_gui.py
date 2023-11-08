@@ -262,9 +262,25 @@ class CASim(Model):
         # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
         n = self.count_same(sq)
         lambda_delta = (self.max_rule_number - n) / self.max_rule_number
+        
+        random_state(sq, lambda_delta)
     
-    def random_state(self):
-        pass
+    def random_state(self, sq, lambda_delta):
+        import random
+        # Generate uniform random number g in [0, 1]
+        g = random.random()
+        # if g>lamba set output for ri to be sq
+        if g > lambda_delta:
+            return sq
+        # else set output for ri set to some random state sp ∈ S, 
+        else:
+            sp = np.random.randint(0, self.k, self.width)
+            # p != q
+            while (sp == sq)
+                sp = np.random.randint(0, self.k, self.width)
+            return sp
+            
+        
     
     def table_walktrough(self):
         pass
@@ -275,8 +291,8 @@ class CASim(Model):
 if __name__ == '__main__':
     sim = CASim()
     from pyics import GUI
-    cx = GUI(sim)
-    cx.start()
+    # cx = GUI(sim)
+    # cx.start()
 
 
 
