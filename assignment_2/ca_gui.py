@@ -135,7 +135,10 @@ class CASim(Model):
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
             self.config[self.t, patch] = self.check_rule(values)   
-
+    
+    def count_same(self, state):
+        """ Count the amount that a state is repeated in all of the rules"""
+        return sum(1 for x in range(self.max_rule_number) if all(state == self.make_new_gen(state, x)))   
     
     def build_rule_set2(self, rule):
         n = self.setter_rule(rule)
@@ -259,10 +262,14 @@ class CASim(Model):
         # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
         n = self.count_same(sq)
         lambda_delta = (self.max_rule_number - n) / self.max_rule_number
-        print(lambda_delta)
     
-    def count_same(self, state):
-        return sum(1 for x in range(self.max_rule_number) if all(state == self.make_new_gen(state, x)))    
+    def random_state(self):
+        pass
+    
+    def table_walktrough(self):
+        pass
+    
+ 
 
 
 if __name__ == '__main__':
