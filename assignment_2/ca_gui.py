@@ -255,16 +255,6 @@ class CASim(Model):
 
         fig.show()
         
-    def calculate_lambda(self):
-        # Pick an arbitrary state
-        sq = np.random.randint(0, self.k, self.width)
-        
-        # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
-        n = self.count_same(sq)
-        lambda_delta = (self.max_rule_number - n) / self.max_rule_number
-        
-        random_state(sq, lambda_delta)
-    
     def random_state(self, sq, lambda_delta):
         import random
         # Generate uniform random number g in [0, 1]
@@ -276,14 +266,36 @@ class CASim(Model):
         else:
             sp = np.random.randint(0, self.k, self.width)
             # p != q
-            while (sp == sq)
+            while (sp == sq):
                 sp = np.random.randint(0, self.k, self.width)
-            return sp
-            
+            return sp       
         
+    def table_walktrough(self, sq, lambda_delta):
+        start_state = sq
+        
+        if lambda_delta > 0:
+            sp = np.random.randint(0, self.k, self.width)
+            # p != q
+            while (sp == sq):
+                sp = np.random.randint(0, self.k, self.width)
+            return sp     
+        if lambda_delta < 0:
+            return sq
+        
+        
+        
+    def calculate_lambda(self):
+        # Pick an arbitrary state
+        sq = np.random.randint(0, self.k, self.width)
+        
+        # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
+        n = self.count_same(sq)
+        lambda_delta = (self.max_rule_number - n) / self.max_rule_number
+        
+        # For each rule ri in all possible rules kN
+        self.random_state(sq, lambda_delta)   
     
-    def table_walktrough(self):
-        pass
+
     
  
 
