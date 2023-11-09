@@ -27,7 +27,6 @@ def get_base_combinations(base, combination_length):
 
     return [list(combination) for combination in base_combinations]
 
-
 class CASim(Model):
     def __init__(self):
         Model.__init__(self)
@@ -48,7 +47,7 @@ class CASim(Model):
         self.make_param('rule', 30, setter=self.setter_rule)
         self.make_param('initial', 1)
         self.make_param('plot', False)
-        self.make_param('table', False)
+        self.make_param('langton', '')
         
 
     def setter_rule(self, val):
@@ -125,6 +124,8 @@ class CASim(Model):
         self.t += 1
         if self.t >= self.height:
             return True
+        
+        sq, lambda_delta = self.calculate_lambda()    
 
         for patch in range(self.width):
             # We want the items r to the left and to the right of this patch,
@@ -134,12 +135,8 @@ class CASim(Model):
             indices = [i % self.width
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
-            self.config[self.t, patch] = self.check_rule(values)   
-    
-    def count_same(self, state):
-        """ Count the amount that a state is repeated in all of the rules"""
-        return sum(1 for x in range(self.max_rule_number) if all(state == self.make_new_gen(state, x)))   
-    
+            self.config[self.t, patch] = self.check_rule(values)
+      
     def build_rule_set2(self, rule):
         n = self.setter_rule(rule)
         rule_in_base = decimal_to_base_k(n, self.k)
@@ -209,7 +206,6 @@ class CASim(Model):
     def create_dataframe(self):
         """ Based on the initial values, create a dataframe."""
         self.calculate_cycle_length()
-
         
         values = np.array(self.all_inits).T.mean(axis=1)
         all_std = [np.std(row) for row in np.array(self.all_inits).T]
@@ -255,32 +251,49 @@ class CASim(Model):
 
         fig.show()
         
-    def random_state(self, sq, lambda_delta):
+    # def randon_table(self, sq, lambda_delta):
+
+    #     import random
+    #     # Generate uniform random number g in [0, 1]
+    #     g = random.random()
+    #     # if g>lamba set output for ri to be sq
+    #     if g >= lambda_delta:
+    #         return sq
+    #     # else set output for ri set to some random state sp ∈ S, 
+    #     else:
+    #         sp = np.random.randint(0, self.k, self.width)
+    #         # p != q
+    #         while (sp == sq).all():
+    #             sp = np.random.randint(0, self.k, self.width)
+    #         return sp
+    
+    def random_table(self, langton_lambda, K, initial_state):
         """ In the random-table method, lambda is interpreted as a bias on the 
-        random selection of states from SUM as we sequentially fill in the 
+        random selection of states from all possible states as we sequentially fill in the 
         transitions that make up a delta function."""
         import random
         # Generate uniform random number g in [0, 1]
-        g = random.random()
-        # if g>lamba set output for ri to be sq
-        if g > lambda_delta:
-            return sq
-        # else set output for ri set to some random state sp ∈ S, 
-        else:
-            sp = np.random.randint(0, self.k, self.width)
-            # p != q
-            while (sp == sq):
-                sp = np.random.randint(0, self.k, self.width)
-            return sp       
+        for cell in range(len(initial_state)):
+            r = random.random()
+            if r >= langton_lambda:
+                initial_state[cell] = K
+            else:
+                K_minus_one = list(range(self.k))
+                K_minus_one.remove(K)
+                initial_state[cell] = random.choice(K_minus_one)
+        return initial_state
+                
+        
+           
         
     def table_walktrough(self, sq, lambda_delta):
         """In the table-walk-through method, we start with a delta function consisting entirely of
         transitions to the quiescent state, so that lambda = 0.0  (but  note restrictions  below)."""
         start_state = sq        
         if lambda_delta > 0:
-            sp = np.random.randint(0, self.k, self.width)
+            sp = np.random.randint(0, self.k, self.rule_set_size)
             # p != q
-            while (sp == sq):
+            while (sp == sq).all():
                 sp = np.random.randint(0, self.k, self.width)
             return sp     
         if lambda_delta < 0:
@@ -288,25 +301,23 @@ class CASim(Model):
         
         
     def calculate_lambda(self):
+        """Let's define the parameter lambda as follows: We choose an arbitrary state
+        s in the set of all the states and designate it as the quiescent state Sq. 
+        In the transition function delta, there are n transitions to this special quiescent state.
+        if n contains all the states than lambda = 0. if n contains no states, than lambda = 1"""
         # Pick an arbitrary state
-        sq = np.random.randint(0, self.k, self.width)
+        sq = np.random.randint(0, self.k, self.rule_set_size)
         
-        # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
-        n = self.count_same(sq)
-        print(sq)
-        lambda_delta = (self.max_rule_number - n) / self.max_rule_number
-        
-        # For each rule ri in all possible rules kN
-        self.random_state(sq, lambda_delta)   
-    
-
-    
- 
-
+        # Count the number of rules in delta that produce this particular quiescent state, and call it n
+        n = sum(self.rule_set)
+                
+        lambda_delta = (self.rule_set_size - n) / self.rule_set_size
+        return sq, lambda_delta
 
 if __name__ == '__main__':
     sim = CASim()
-    from pyics import GUI
+    print(sim.random_table(0.5, 1, [0,0,0,0,0,0,0,0]))
+    # from pyics import GUI
     # cx = GUI(sim)
     # cx.start()
 
