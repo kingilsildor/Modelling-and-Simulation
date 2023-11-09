@@ -255,13 +255,25 @@ class CASim(Model):
         sq = np.random.randint(0, self.k, self.width)
         
         # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
-        n = self.count_same(sq)
-        print(sq)
+        n = sum(self.rule_set)
+        
         lambda_delta = (self.max_rule_number - n) / self.max_rule_number
         print(lambda_delta)
     
-    def count_same(self, state):
-        return sum(1 for x in range(self.max_rule_number) if all(state == self.make_new_gen(state, x)))    
+    def walk_through(self, Lambda):
+        n = round(abs(Lambda * self.max_rule_number -self.max_rule_number))
+        ruleset = np.zeros(self.max_rule_number)
+        index_lijst = [index for index in range(self.max_rule_number)]
+        import random
+        random_indexes = set()
+        while len(random_indexes) < n:
+            random_indexes.add(random.choice(index_lijst))
+
+        for index in random_indexes:
+            ruleset[index] = np.random.randint(1, self.k+1)
+        
+        return ruleset
+        
 
 
 if __name__ == '__main__':
