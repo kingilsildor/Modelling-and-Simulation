@@ -158,24 +158,22 @@ class CASim(Model):
         
         for num in range(length_row):
             
-            if not num:
-                current_row = [row[length_row-1]] + row[:num+1]
-                
+            if num == 0:
+                current_row = [row[-1]] + list(row[:2])
                 new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
             elif num == length_row-1:
-                current_row = row[length_row-2:length_row-1] + [row[0]]
+                current_row = list(row[length_row-2:]) + [row[0]]
                 new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
             else:
-                current_row = row[num-1:num+2]
-                
+                current_row = list(row[num-1:num+2])
                 new_value = self.check_rule2(current_row, rule)
                 new_gen_row.append(new_value)
         
         return new_gen_row
     
-    def calculate_cycle_legth(self):
+    def calculate_cycle_length(self):
         self.all_rules = [i for i in range(self.max_rule_number)]
         system_length = self.r*2 + 1
 
@@ -206,7 +204,7 @@ class CASim(Model):
             self.all_inits.append(cycle_lengths)
             
     def create_dataframe(self):
-        self.calculate_cycle_legth()
+        self.calculate_cycle_length()
         
         values = np.array(self.all_inits).T.mean(axis=1)
         all_std = [np.std(row) for row in np.array(self.all_inits).T]
@@ -258,6 +256,7 @@ class CASim(Model):
         
         # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
         n = self.count_same(sq)
+        print(sq)
         lambda_delta = (self.max_rule_number - n) / self.max_rule_number
         print(lambda_delta)
     
