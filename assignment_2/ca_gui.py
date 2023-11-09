@@ -209,6 +209,7 @@ class CASim(Model):
             self.all_inits.append(cycle_lengths)
             
     def create_dataframe(self):
+        """ Based on the initial values, create a dataframe."""
         self.calculate_cycle_legth()
         
         values = np.array(self.all_inits).T.mean(axis=1)
@@ -256,6 +257,9 @@ class CASim(Model):
         fig.show()
         
     def random_state(self, sq, lambda_delta):
+        """ In the random-table method, lambda is interpreted as a bias on the 
+        random selection of states from SUM as we sequentially fill in the 
+        transitions that make up a delta function."""
         import random
         # Generate uniform random number g in [0, 1]
         g = random.random()
@@ -271,8 +275,9 @@ class CASim(Model):
             return sp       
         
     def table_walktrough(self, sq, lambda_delta):
-        start_state = sq
-        
+        """In the table-walk-through method, we start with a delta function consisting entirely of
+        transitions to the quiescent state, so that lambda = 0.0  (but  note restrictions  below)."""
+        start_state = sq        
         if lambda_delta > 0:
             sp = np.random.randint(0, self.k, self.width)
             # p != q
@@ -280,8 +285,7 @@ class CASim(Model):
                 sp = np.random.randint(0, self.k, self.width)
             return sp     
         if lambda_delta < 0:
-            return sq
-        
+            return sq        
         
         
     def calculate_lambda(self):
