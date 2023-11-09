@@ -135,7 +135,10 @@ class CASim(Model):
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
             self.config[self.t, patch] = self.check_rule(values)   
-
+    
+    def count_same(self, state):
+        """ Count the amount that a state is repeated in all of the rules"""
+        return sum(1 for x in range(self.max_rule_number) if all(state == self.make_new_gen(state, x)))   
     
     def build_rule_set2(self, rule):
         n = self.setter_rule(rule)
@@ -204,7 +207,9 @@ class CASim(Model):
             self.all_inits.append(cycle_lengths)
             
     def create_dataframe(self):
+        """ Based on the initial values, create a dataframe."""
         self.calculate_cycle_length()
+
         
         values = np.array(self.all_inits).T.mean(axis=1)
         all_std = [np.std(row) for row in np.array(self.all_inits).T]
@@ -250,6 +255,38 @@ class CASim(Model):
 
         fig.show()
         
+    def random_state(self, sq, lambda_delta):
+        """ In the random-table method, lambda is interpreted as a bias on the 
+        random selection of states from SUM as we sequentially fill in the 
+        transitions that make up a delta function."""
+        import random
+        # Generate uniform random number g in [0, 1]
+        g = random.random()
+        # if g>lamba set output for ri to be sq
+        if g > lambda_delta:
+            return sq
+        # else set output for ri set to some random state sp ∈ S, 
+        else:
+            sp = np.random.randint(0, self.k, self.width)
+            # p != q
+            while (sp == sq):
+                sp = np.random.randint(0, self.k, self.width)
+            return sp       
+        
+    def table_walktrough(self, sq, lambda_delta):
+        """In the table-walk-through method, we start with a delta function consisting entirely of
+        transitions to the quiescent state, so that lambda = 0.0  (but  note restrictions  below)."""
+        start_state = sq        
+        if lambda_delta > 0:
+            sp = np.random.randint(0, self.k, self.width)
+            # p != q
+            while (sp == sq):
+                sp = np.random.randint(0, self.k, self.width)
+            return sp     
+        if lambda_delta < 0:
+            return sq        
+        
+        
     def calculate_lambda(self):
         # Pick an arbitrary state
         sq = np.random.randint(0, self.k, self.width)
@@ -258,17 +295,20 @@ class CASim(Model):
         n = self.count_same(sq)
         print(sq)
         lambda_delta = (self.max_rule_number - n) / self.max_rule_number
-        print(lambda_delta)
+        
+        # For each rule ri in all possible rules kN
+        self.random_state(sq, lambda_delta)   
     
-    def count_same(self, state):
-        return sum(1 for x in range(self.max_rule_number) if all(state == self.make_new_gen(state, x)))    
+
+    
+ 
 
 
 if __name__ == '__main__':
     sim = CASim()
     from pyics import GUI
-    cx = GUI(sim)
-    cx.start()
+    # cx = GUI(sim)
+    # cx.start()
 
 
 
