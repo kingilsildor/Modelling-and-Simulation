@@ -45,6 +45,7 @@ class CASim(Model):
         self.make_param('width', 50)
         self.make_param('height', 50)
         self.make_param('rule', 30, setter=self.setter_rule)
+        
         self.make_param('initial', 1)
         self.make_param('plot', False)
         self.make_param('langton', '')
@@ -85,12 +86,16 @@ class CASim(Model):
         """Returns an array of length `width' with the initial state for each of
         the cells in the first row. Values should be between 0 and k."""        
         initial = None
-        if self.initial == 1:           
-            initial  = np.zeros(self.width)
+        
+        if self.initial == 0:
+            initial = np.zeros(self.width)            
+        elif self.initial == 1:           
+            initial = np.zeros(self.width)
             initial[self.width//2] = 1
         else:
             np.random.seed(self.initial)
             initial = np.random.randint(0, self.k, size=self.width)
+            
         return initial
 
     def reset(self):
@@ -99,11 +104,18 @@ class CASim(Model):
         self.t = 0
         self.config = np.zeros([self.height, self.width])
         self.config[0, :] = self.setup_initial_row()
-        self.build_rule_set()
+        
+        # Change the ruleset based on langton table
+        if self.langton == 'random':
+            self.random_table()
+        elif self.langton == 'table':
+            self.walk_trough()
+        else:
+            self.build_rule_set()
+            
         if self.plot:
             self.create_graph()
             self.plot = False
-        self.calculate_lambda()
 
     def draw(self):
         """Draws the current state of the grid."""
@@ -123,9 +135,7 @@ class CASim(Model):
         row) and applying the rule to determine the state of the cells."""
         self.t += 1
         if self.t >= self.height:
-            return True
-        
-        sq, lambda_delta = self.calculate_lambda()    
+            return True     
 
         for patch in range(self.width):
             # We want the items r to the left and to the right of this patch,
@@ -249,42 +259,25 @@ class CASim(Model):
             height=800
         )
 
-        fig.show()
-        
-    # def randon_table(self, sq, lambda_delta):
-
-    #     import random
-    #     # Generate uniform random number g in [0, 1]
-    #     g = random.random()
-    #     # if g>lamba set output for ri to be sq
-    #     if g >= lambda_delta:
-    #         return sq
-    #     # else set output for ri set to some random state sp ∈ S, 
-    #     else:
-    #         sp = np.random.randint(0, self.k, self.width)
-    #         # p != q
-    #         while (sp == sq).all():
-    #             sp = np.random.randint(0, self.k, self.width)
-    #         return sp
+        fig.show()        
     
-    def random_table(self, langton_lambda, K, initial_state):
+    def random_table(self, langton_lambda, K):
         """ In the random-table method, lambda is interpreted as a bias on the 
         random selection of states from all possible states as we sequentially fill in the 
         transitions that make up a delta function."""
         import random
+        rule_set = np.zeros(self.max_rule_number)
         # Generate uniform random number g in [0, 1]
-        for cell in range(len(initial_state)):
+        for cell in range(len(rule_set)):
             r = random.random()
             if r >= langton_lambda:
-                initial_state[cell] = K
+                rule_set[cell] = K
             else:
                 K_minus_one = list(range(self.k))
                 K_minus_one.remove(K)
-                initial_state[cell] = random.choice(K_minus_one)
-        return initial_state
-                
-        
-           
+                rule_set[cell] = random.choice(K_minus_one)
+        self.rule_set = rule_set               
+         
         
     def table_walktrough(self, sq, lambda_delta):
         """In the table-walk-through method, we start with a delta function consisting entirely of
@@ -308,18 +301,42 @@ class CASim(Model):
         # Pick an arbitrary state
         sq = np.random.randint(0, self.k, self.rule_set_size)
         
+        df = self.return_df()
+        
         # Count the number of rules in delta that produce this particular quiescent state, and call it n
-        n = sum(self.rule_set)
-                
-        lambda_delta = (self.rule_set_size - n) / self.rule_set_size
-        return sq, lambda_delta
+        for rule, _ in df.iterrows():
+            self.rule = rule
+            self.build_rule_set()
+            
+            n = sum(self.rule_set)  
+              
+            print(sum(self.rule_set))         
+            lambda_delta = (self.rule_set_size - n) / self.rule_set_size   
+            # print(rule, lambda_delta)
+            # df[rule, 'lambda'] = lambda_delta
+            
+        # df.to_csv("test.csv", sep='\t')
 
+    
+    def return_df(self):
+        """When creating a dataframe out of the csv files, the first row are used as head
+        To circumvent this the following function is created"""        
+        df = pd.read_csv("rule_class_wolfram.csv")
+        df.rename(columns={'1': 'complexity'}, inplace=True)
+        df = df.drop(['0'], axis=1)
+
+        # New row data
+        new_row = {'rules': 0, 'complexity': 1}
+
+        # Insert the new row at the beginning
+        df.loc[-1] = new_row
+        df.index = df.index + 1
+        df = df.sort_index()
+        return df
+    
 if __name__ == '__main__':
-    sim = CASim()
-    print(sim.random_table(0.5, 1, [0,0,0,0,0,0,0,0]))
+    sim = CASim()    
+    sim.calculate_lambda()
     # from pyics import GUI
     # cx = GUI(sim)
     # cx.start()
-
-
-
