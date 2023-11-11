@@ -301,10 +301,13 @@ class CASim(Model):
     
     def walk_through(self, Lambda):
         n = round(abs(Lambda * self.max_rule_number -self.max_rule_number))
+
         ruleset = np.zeros(self.max_rule_number)
         index_lijst = [index for index in range(self.max_rule_number)]
-        import random
         random_indexes = set()
+
+        import random
+
         while len(random_indexes) < n:
             random_indexes.add(random.choice(index_lijst))
 
@@ -312,6 +315,20 @@ class CASim(Model):
             ruleset[index] = np.random.randint(1, self.k+1)
         
         return ruleset
+    
+
+    def bin_list_to_num(self, bin_list):
+        return sum(bit * (2 ** i) for i, bit in enumerate(bin_list[::-1]))
+
+    def lambda_feature_test(self):
+
+        for ruleset_function in ['walk through', 'random state']:
+            for lambda_value in range(0, 105, 5):
+                lambda_value /=100
+                
+                
+
+
         
 
 
