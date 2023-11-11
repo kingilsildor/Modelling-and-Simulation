@@ -348,6 +348,9 @@ class CASim(Model):
     
 
     def entropy_graph(self):
+        """The experiment entailed the average single-cell Shannon entropy for lambda with the table-walk-through method 
+        for the ruleset and the parameters lambda 0.1 until 0.9 with steps of 0.02, k=2, r=1, matrix shape 64x64 excluding 
+        the initial state and 10 different random initial states."""
         all_runs = []
 
         for _ in range(10):
@@ -356,7 +359,7 @@ class CASim(Model):
             for lambda_value in range(10, 91, 2):
                 lambda_value /= 100
                 self.walk_through(lambda_value)
-                rule = sum(bit * (2 ** i) for i, bit in enumerate(self.rule_set[::-1]))
+                rule = sum(bit * (2 ** i) for i, bit in enumerate(self.rule_set[::-1])) # This is to convert binary list back to rule number
                 matrix = [self.make_new_gen(initial_row, rule)]
 
                 for _ in range(63):
@@ -367,7 +370,7 @@ class CASim(Model):
                     rest, state_counts = np.unique(cell_states, return_counts=True)
                     probs = state_counts / len(cell_states)
                     
-                    average_entropy = -np.sum([p * np.log2(p) if p > 0 else 0 for p in probs])
+                    average_entropy = -np.sum([p * np.log2(p) if p > 0 else 0 for p in probs]) # Shannon entropy formula
                     entropies.append(average_entropy)
 
                 all_runs.append([lambda_value, np.mean(entropies)])    
