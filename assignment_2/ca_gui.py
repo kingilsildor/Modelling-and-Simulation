@@ -279,18 +279,23 @@ class CASim(Model):
         self.rule_set = rule_set               
          
         
-    def table_walktrough(self, sq, lambda_delta):
+    def walk_through(self, Lambda):
         """In the table-walk-through method, we start with a delta function consisting entirely of
         transitions to the quiescent state, so that lambda = 0.0  (but  note restrictions  below)."""
-        start_state = sq        
-        if lambda_delta > 0:
-            sp = np.random.randint(0, self.k, self.rule_set_size)
-            # p != q
-            while (sp == sq).all():
-                sp = np.random.randint(0, self.k, self.width)
-            return sp     
-        if lambda_delta < 0:
-            return sq        
+        n = round(abs(Lambda * self.max_rule_number -self.max_rule_number))
+        ruleset = np.zeros(self.max_rule_number)
+        index_lijst = [index for index in range(self.max_rule_number)]
+        
+        import random
+        random_indexes = set()
+        
+        while len(random_indexes) < n:
+            random_indexes.add(random.choice(index_lijst))
+
+        for index in random_indexes:
+            ruleset[index] = np.random.randint(1, self.k+1)
+        
+        return ruleset     
         
         
     def calculate_lambda(self):
