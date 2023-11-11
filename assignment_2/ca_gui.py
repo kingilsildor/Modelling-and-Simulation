@@ -301,7 +301,7 @@ class CASim(Model):
         """When creating a dataframe out of the csv files, the first row are used as head
         To circumvent this the following function is created"""        
         df = pd.read_csv("rule_class_wolfram.csv")
-        df.rename(columns={'0': 'rule', '1': 'complexity'}, inplace=True)
+        df.rename(columns={'0': 'rule', '1': 'wolfram class'}, inplace=True)
 
         # New row data
         new_row = {'rule': 0, 'complexity': 1}
@@ -333,9 +333,9 @@ class CASim(Model):
 
         import plotly.express as px
         x_axis_start = -1
-        x_axis_step_size = 5 
+        x_axis_step_size = 10
 
-        fig = px.scatter(df, y="lambda parameter", x="rule", color="complexity")
+        fig = px.scatter(df, y="lambda parameter", x="rule", color="wolfram class")
         fig.update_traces(marker_size=10)
         fig.update_xaxes(range=[x_axis_start, df['rule'].max() + 1], dtick=x_axis_step_size)
         fig.update_layout(coloraxis_colorbar=dict(dtick=1))
