@@ -27,7 +27,6 @@ def get_base_combinations(base, combination_length):
 
     return [list(combination) for combination in base_combinations]
 
-
 class CASim(Model):
     def __init__(self):
         Model.__init__(self)
@@ -46,9 +45,10 @@ class CASim(Model):
         self.make_param('width', 50)
         self.make_param('height', 50)
         self.make_param('rule', 30, setter=self.setter_rule)
+        
         self.make_param('initial', 1)
         self.make_param('plot', False)
-        self.make_param('table', False)
+        self.make_param('langton', '')
         
 
     def setter_rule(self, val):
@@ -86,12 +86,16 @@ class CASim(Model):
         """Returns an array of length `width' with the initial state for each of
         the cells in the first row. Values should be between 0 and k."""        
         initial = None
-        if self.initial == 1:           
-            initial  = np.zeros(self.width)
+        
+        if self.initial == 0:
+            initial = np.zeros(self.width)            
+        elif self.initial == 1:           
+            initial = np.zeros(self.width)
             initial[self.width//2] = 1
         else:
             np.random.seed(self.initial)
             initial = np.random.randint(0, self.k, size=self.width)
+            
         return initial
 
     def reset(self):
@@ -100,11 +104,18 @@ class CASim(Model):
         self.t = 0
         self.config = np.zeros([self.height, self.width])
         self.config[0, :] = self.setup_initial_row()
-        self.build_rule_set()
+        
+        # Change the ruleset based on langton table
+        if self.langton == 'random':
+            self.random_table()
+        elif self.langton == 'table':
+            self.walk_trough()
+        else:
+            self.build_rule_set()
+            
         if self.plot:
             self.create_graph()
             self.plot = False
-        self.calculate_lambda()
 
     def draw(self):
         """Draws the current state of the grid."""
@@ -124,7 +135,7 @@ class CASim(Model):
         row) and applying the rule to determine the state of the cells."""
         self.t += 1
         if self.t >= self.height:
-            return True
+            return True     
 
         for patch in range(self.width):
             # We want the items r to the left and to the right of this patch,
@@ -134,12 +145,8 @@ class CASim(Model):
             indices = [i % self.width
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
-            self.config[self.t, patch] = self.check_rule(values)   
-    
-    def count_same(self, state):
-        """ Count the amount that a state is repeated in all of the rules"""
-        return sum(1 for x in range(self.max_rule_number) if all(state == self.make_new_gen(state, x)))   
-    
+            self.config[self.t, patch] = self.check_rule(values)
+      
     def build_rule_set2(self, rule):
         n = self.setter_rule(rule)
         rule_in_base = decimal_to_base_k(n, self.k)
@@ -209,7 +216,6 @@ class CASim(Model):
     def create_dataframe(self):
         """ Based on the initial values, create a dataframe."""
         self.calculate_cycle_length()
-
         
         values = np.array(self.all_inits).T.mean(axis=1)
         all_std = [np.std(row) for row in np.array(self.all_inits).T]
@@ -253,73 +259,93 @@ class CASim(Model):
             height=800
         )
 
-        fig.show()
-        
-    def random_state(self, sq, lambda_delta):
+        fig.show()        
+    
+    def random_table(self, langton_lambda, K):
         """ In the random-table method, lambda is interpreted as a bias on the 
-        random selection of states from SUM as we sequentially fill in the 
+        random selection of states from all possible states as we sequentially fill in the 
         transitions that make up a delta function."""
         import random
+        rule_set = np.zeros(self.max_rule_number)
         # Generate uniform random number g in [0, 1]
-        g = random.random()
-        # if g>lamba set output for ri to be sq
-        if g > lambda_delta:
-            return sq
-        # else set output for ri set to some random state sp ∈ S, 
-        else:
-            sp = np.random.randint(0, self.k, self.width)
-            # p != q
-            while (sp == sq):
-                sp = np.random.randint(0, self.k, self.width)
-            return sp       
+        for cell in range(len(rule_set)):
+            r = random.random()
+            if r >= langton_lambda:
+                rule_set[cell] = K
+            else:
+                K_minus_one = list(range(self.k))
+                K_minus_one.remove(K)
+                rule_set[cell] = random.choice(K_minus_one)
+        self.rule_set = rule_set               
+         
         
-    def table_walktrough(self, sq, lambda_delta):
+    def walk_through(self, Lambda):
         """In the table-walk-through method, we start with a delta function consisting entirely of
         transitions to the quiescent state, so that lambda = 0.0  (but  note restrictions  below)."""
-        start_state = sq        
-        if lambda_delta > 0:
-            sp = np.random.randint(0, self.k, self.width)
-            # p != q
-            while (sp == sq):
-                sp = np.random.randint(0, self.k, self.width)
-            return sp     
-        if lambda_delta < 0:
-            return sq        
-        
-        
-    def calculate_lambda(self):
-        # Pick an arbitrary state
-        sq = np.random.randint(0, self.k, self.width)
-        
-        # Count the number of rules in $\Delta$ that produce this particular quiescent state, and call it n
-        n = sum(self.rule_set)
-        
-        lambda_delta = (self.max_rule_number - n) / self.max_rule_number
-        
-        # For each rule ri in all possible rules kN
-        self.random_state(sq, lambda_delta)   
-    
-    def walk_through(self, Lambda):
         n = round(abs(Lambda * self.max_rule_number -self.max_rule_number))
         ruleset = np.zeros(self.max_rule_number)
         index_lijst = [index for index in range(self.max_rule_number)]
+        
         import random
         random_indexes = set()
+        
         while len(random_indexes) < n:
             random_indexes.add(random.choice(index_lijst))
 
         for index in random_indexes:
             ruleset[index] = np.random.randint(1, self.k+1)
         
-        return ruleset
+        return ruleset     
+    
+    def return_df(self):
+        """When creating a dataframe out of the csv files, the first row are used as head
+        To circumvent this the following function is created"""        
+        df = pd.read_csv("rule_class_wolfram.csv")
+        df.rename(columns={'0': 'rule', '1': 'wolfram class'}, inplace=True)
+
+        # New row data
+        new_row = {'rule': 0, 'complexity': 1}
+
+        # Insert the new row at the beginning
+        df.loc[-1] = new_row
+        df.index = df.index + 1
+        df = df.sort_index()
+        return df
         
+        
+    def calculate_lambda(self):
+        """Let's define the parameter lambda as follows: We choose an arbitrary state
+        s in the set of all the states and designate it as the quiescent state Sq. 
+        In the transition function delta, there are n transitions to this special quiescent state.
+        if n contains all the states than lambda = 0. if n contains no states, than lambda = 1"""
+        
+        df = self.return_df()
+        
+        # Count the number of rules in delta that produce this particular quiescent state, and call it n
+        for rule, _ in df.iterrows():
+            self.rule = rule
+            self.build_rule_set()
+            
+            n = sum(self.rule_set)  
+            lambda_delta = round(((self.rule_set_size - n) / self.rule_set_size), 2)   
+            # print(rule, lambda_delta)
+            df.loc[rule, 'lambda parameter'] = lambda_delta
 
+        import plotly.express as px
+        x_axis_start = -1
+        x_axis_step_size = 10
 
+        fig = px.scatter(df, y="lambda parameter", x="rule", color="wolfram class")
+        fig.update_traces(marker_size=10)
+        fig.update_xaxes(range=[x_axis_start, df['rule'].max() + 1], dtick=x_axis_step_size)
+        fig.update_layout(coloraxis_colorbar=dict(dtick=1))
+        fig.show()
+    
+
+    
 if __name__ == '__main__':
-    sim = CASim()
+    sim = CASim()    
+    sim.calculate_lambda()
     from pyics import GUI
-    # cx = GUI(sim)
-    # cx.start()
-
-
-
+    cx = GUI(sim)
+    cx.start()
