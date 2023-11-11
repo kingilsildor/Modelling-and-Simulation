@@ -296,6 +296,21 @@ class CASim(Model):
             ruleset[index] = np.random.randint(1, self.k+1)
         
         return ruleset     
+    
+    def return_df(self):
+        """When creating a dataframe out of the csv files, the first row are used as head
+        To circumvent this the following function is created"""        
+        df = pd.read_csv("rule_class_wolfram.csv")
+        df.rename(columns={'0': 'rule', '1': 'complexity'}, inplace=True)
+
+        # New row data
+        new_row = {'rule': 0, 'complexity': 1}
+
+        # Insert the new row at the beginning
+        df.loc[-1] = new_row
+        df.index = df.index + 1
+        df = df.sort_index()
+        return df
         
         
     def calculate_lambda(self):
@@ -303,8 +318,6 @@ class CASim(Model):
         s in the set of all the states and designate it as the quiescent state Sq. 
         In the transition function delta, there are n transitions to this special quiescent state.
         if n contains all the states than lambda = 0. if n contains no states, than lambda = 1"""
-        # Pick an arbitrary state
-        sq = np.random.randint(0, self.k, self.rule_set_size)
         
         df = self.return_df()
         
@@ -314,34 +327,25 @@ class CASim(Model):
             self.build_rule_set()
             
             n = sum(self.rule_set)  
-              
-            print(sum(self.rule_set))         
-            lambda_delta = (self.rule_set_size - n) / self.rule_set_size   
+            lambda_delta = round(((self.rule_set_size - n) / self.rule_set_size), 2)   
             # print(rule, lambda_delta)
-            # df[rule, 'lambda'] = lambda_delta
-            
-        # df.to_csv("test.csv", sep='\t')
+            df.loc[rule, 'lambda parameter'] = lambda_delta
 
+        import plotly.express as px
+        x_axis_start = -1
+        x_axis_step_size = 5 
+
+        fig = px.scatter(df, y="lambda parameter", x="rule", color="complexity")
+        fig.update_traces(marker_size=10)
+        fig.update_xaxes(range=[x_axis_start, df['rule'].max() + 1], dtick=x_axis_step_size)
+        fig.update_layout(coloraxis_colorbar=dict(dtick=1))
+        fig.show()
     
-    def return_df(self):
-        """When creating a dataframe out of the csv files, the first row are used as head
-        To circumvent this the following function is created"""        
-        df = pd.read_csv("rule_class_wolfram.csv")
-        df.rename(columns={'1': 'complexity'}, inplace=True)
-        df = df.drop(['0'], axis=1)
 
-        # New row data
-        new_row = {'rules': 0, 'complexity': 1}
-
-        # Insert the new row at the beginning
-        df.loc[-1] = new_row
-        df.index = df.index + 1
-        df = df.sort_index()
-        return df
     
 if __name__ == '__main__':
     sim = CASim()    
     sim.calculate_lambda()
-    # from pyics import GUI
-    # cx = GUI(sim)
-    # cx.start()
+    from pyics import GUI
+    cx = GUI(sim)
+    cx.start()
