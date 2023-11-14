@@ -136,19 +136,26 @@ def run_simulation_for_density(sim, density, sim_amount=30, N=50, T=1000):
     # print(f"Density: {round(density, 2)}, Car Flow: {sim.car_flow}")
     return np.round(np.average(average_density),0)
 
-if __name__ == '__main__':
-    sim = CASim()
+def plot_df(sim, sim_amount=30, N=50, T=1000):
+    """Plot the car density for different values"""
     densities = np.arange(0, 1.05, 0.05)
 
     df = pd.DataFrame(columns=['density', 'car flow'])
     for density in densities:        
-        df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density)]
+        df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=T)]
     print(df)
     
     import plotly.express as px
     fig = px.scatter(df, y="car flow", x="density")
     fig.update_traces(marker={'size': 15})
     fig.show()
+    
+
+if __name__ == '__main__':
+    sim = CASim()
+    plot_df(sim, N=3, T=5)
+    plot_df(sim)
+
 
 
 # from pyics import GUI
