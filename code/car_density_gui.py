@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from pyics import Model
 
 def decimal_to_base_k(n, k):
@@ -22,13 +23,15 @@ class CASim(Model):
 
         self.t = 0
         self.config = None
+        self.car_flow = 0
+        self.car_dict = {}
 
         self.make_param('r', 1)
         self.make_param('k', 2)
         self.make_param('width', 50)
-        self.make_param('height', 50)
+        self.make_param('height', 1000)
         self.make_param('rule', 184, setter=self.setter_rule)        
-        self.make_param('initial', 14)        
+        self.make_param('density', 0.40)        
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -64,20 +67,19 @@ class CASim(Model):
     def setup_initial_row(self):
         """Returns an array of length `width' with the initial state for each of
         the cells in the first row. Values should be between 0 and k."""        
-        initial = None          
-        if self.initial == 1:           
-            initial = np.zeros(self.width)
-            initial[self.width//2] = 1
+        initial = None
+        if ( 0 <= self.density <= 1):
+            initial = np.random.choice(self.k, size=self.width, p=[1 - self.density, self.density])        
         else:
-            np.random.seed(self.initial)
+            np.random.seed(self.density)
             initial = np.random.randint(0, self.k, size=self.width)
-            
         return initial
 
     def reset(self):
         """Initializes the configuration of the cells and converts the entered
         rule number to a rule set."""
         self.t = 0
+        self.car_flow = 0
         self.config = np.zeros([self.height, self.width])
         self.config[0, :] = self.setup_initial_row()
         self.build_rule_set()  
@@ -110,10 +112,45 @@ class CASim(Model):
             indices = [i % self.width
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
-            self.config[self.t, patch] = self.check_rule(values)    
- 
+            self.config[self.t, patch] = self.check_rule(values)
+            
+        """ Calculate the amount of cars that cross the right-hand side
+        system boundary per unit of time."""    
+        if (self.config[self.t, 0] == 0 and self.config[self.t, self.width - 1] == 1):
+            self.car_flow += 1
+    
+def run_simulation_for_density(sim, density, sim_amount=30, N=50, T=1000):
+    """Runs a simulation with specified density on a traffic simulation object
+    for a given time (T) and road length (N), resetting the simulation and 
+    returning the resulting car flow."""
+    sim.density = density
+    sim.width = N
+    sim.reset()
+    
+    average_density = []
+    for _ in range(sim_amount): 
+        for _ in range(T):
+            sim.step()
+            average_density.append(sim.car_flow)
+
+    # print(f"Density: {round(density, 2)}, Car Flow: {sim.car_flow}")
+    return np.round(np.average(average_density),0)
+
 if __name__ == '__main__':
-    sim = CASim()    
-    from pyics import GUI
-    cx = GUI(sim)
-    cx.start()
+    sim = CASim()
+    densities = np.arange(0, 1.05, 0.05)
+
+    df = pd.DataFrame(columns=['density', 'car flow'])
+    for density in densities:        
+        df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density)]
+    print(df)
+    
+    import plotly.express as px
+    fig = px.scatter(df, y="car flow", x="density")
+    fig.update_traces(marker={'size': 15})
+    fig.show()
+
+
+# from pyics import GUI
+# cx = GUI(sim)
+# cx.start()
