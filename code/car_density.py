@@ -1,55 +1,41 @@
 import numpy as np
-
-
 from pyics import Model
-
 
 def decimal_to_base_k(n, k):
     """Converts a given decimal (i.e. base-10 integer) to a list containing the
     base-k equivalant.
 
-    For example, for n=34 and k=3 this function should return [1, 0, 2, 1]."""
+    For example, for n=34 and k=3 this function should return [1, 0, 2, 1]."""    
     if n == 0:
         return [0]
     
-    result = []
+    digits = []
     while n > 0:
-        result.append(n % k)
+        digits.append(n % k)
         n //= k
-        
-    return result[::-1]
 
-def get_base_combinations(base, combination_length):
-    "Generate all possible combinations of values in a given base-k for a specified width."
-    import itertools
-    base_values = list(range(base))
-    base_combinations = list(itertools.product(base_values, repeat=combination_length))
-
-    return [list(combination) for combination in base_combinations]
+    return digits[::-1]
 
 class CASim(Model):
     def __init__(self):
         Model.__init__(self)
 
         self.t = 0
-        self.rule_set = []
-        self.cycle_len_arr = []
         self.config = None
 
         self.make_param('r', 1)
         self.make_param('k', 2)
-        self.make_param('width', 3)
-        self.make_param('height', 10 ** 6)
-        self.make_param('rule', 0, setter=self.setter_rule)
-        self.make_param('initial', 1)
-        
+        self.make_param('width', 50)
+        self.make_param('height', 50)
+        self.make_param('rule', 184, setter=self.setter_rule)        
+        self.make_param('initial', 14)        
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
-        maximum possible rule number."""
-        rule_set_size = self.k ** (2 * self.r + 1)
-        max_rule_number = self.k ** rule_set_size
-        return max(0, min(val, max_rule_number - 1))
+        maximum possible rule number."""        
+        self.rule_set_size = self.k ** (2 * self.r + 1)
+        self.max_rule_number = self.k ** self.rule_set_size
+        return max(0, min(val, self.max_rule_number - 1))
 
     def build_rule_set(self):
         """Sets the rule set for the current rule.
@@ -57,34 +43,30 @@ class CASim(Model):
 
         For example, for rule=34, k=3, r=1 this function should set rule_set to
         [0, ..., 0, 1, 0, 2, 1] (length 27). This means that for example
-        [2, 2, 2] -> 0 and [0, 0, 1] -> 2."""
+        [2, 2, 2] -> 0 and [0, 0, 1] -> 2."""        
         base_arr = decimal_to_base_k(self.rule, self.k)
-        rule_arr = np.zeros(self.k ** (2 * self.r + 1))
+        rule_arr = np.zeros(self.rule_set_size)
         rule_arr[-len(base_arr):] = base_arr
         self.rule_set = rule_arr
-
+        
     def check_rule(self, inp):
         """Returns the new state based on the input states.
 
         The input state will be an array of 2r+1 items between 0 and k, the
-        neighbourhood which the state of the new cell depends on."""
+        neighbourhood which the state of the new cell depends on."""        
         reversed_ruleset = self.rule_set[::-1]
         base_index = 0
 
         for num in inp:
             base_index = base_index * self.k + num
         return reversed_ruleset[int(base_index)]
-    
-    def check_cycle_len(self, inp):
-        if not any((inp == sublist).all() for sublist in self.cycle_len_arr):
-            self.cycle_len_arr.append(inp.tolist())
 
     def setup_initial_row(self):
         """Returns an array of length `width' with the initial state for each of
-        the cells in the first row. Values should be between 0 and k."""
-        initial = None
+        the cells in the first row. Values should be between 0 and k."""        
+        initial = None          
         if self.initial == 1:           
-            initial  = np.zeros(self.width)
+            initial = np.zeros(self.width)
             initial[self.width//2] = 1
         else:
             np.random.seed(self.initial)
@@ -95,16 +77,13 @@ class CASim(Model):
     def reset(self):
         """Initializes the configuration of the cells and converts the entered
         rule number to a rule set."""
-
         self.t = 0
-        self.cycle_len_arr = []
         self.config = np.zeros([self.height, self.width])
         self.config[0, :] = self.setup_initial_row()
-        self.build_rule_set()
-
+        self.build_rule_set()  
+                  
     def draw(self):
         """Draws the current state of the grid."""
-
         import matplotlib
         import matplotlib.pyplot as plt
 
@@ -121,7 +100,7 @@ class CASim(Model):
         row) and applying the rule to determine the state of the cells."""
         self.t += 1
         if self.t >= self.height:
-            return True
+            return True     
 
         for patch in range(self.width):
             # We want the items r to the left and to the right of this patch,
@@ -131,43 +110,10 @@ class CASim(Model):
             indices = [i % self.width
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
-            self.config[self.t, patch] = self.check_rule(values)
-            self.check_cycle_len(values)
-            
-    def get_cycle_len(self):
-        """Get the length of the cycle recorded in the 'cycle_len_arr' attribute."""
-        return len(self.cycle_len_arr)
-    
-    def calculate_lambda(self):
-        """Calculate and return a dictionary of average lambda values for a given Cellular Automaton rule
-        based on all the possible initial states. """
-
-
-        # Get all the possible combinations given base-k and width
-        initial_rows = get_base_combinations(self.k, self.width)
-        lambda_dict = {}
-        for rule in range(rules):
-            sim.reset()
-            self.rule = rule
-            total_cycle_len = 0
-            
-            for initial_row in initial_rows:
-                # Change the initial row
-                self.config[0, :] = initial_row
-                
-                for step in range(self.height):
-                    sim.step()
-                total_cycle_len += sim.get_cycle_len()
-                
-            # Calculate the average cycle length for each rule
-            lambda_dict[rule] =  round(total_cycle_len / len(initial_rows))
-        return lambda_dict                
-      
-
+            self.config[self.t, patch] = self.check_rule(values)    
+ 
 if __name__ == '__main__':
-    sim = CASim()
-    print(sim.calculate_lambda())
-    
+    sim = CASim()    
     from pyics import GUI
     cx = GUI(sim)
     cx.start()
