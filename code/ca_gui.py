@@ -48,7 +48,8 @@ class CASim(Model):
         
         self.make_param('initial', 1)
         self.make_param('plot', False)
-        self.make_param('langton', '')
+        self.make_param('langton', 'table')
+        self.make_param('lambda_value', 0.05)
         
 
     def setter_rule(self, val):
@@ -107,15 +108,17 @@ class CASim(Model):
         
         # Change the ruleset based on langton table
         if self.langton == 'random':
-            self.random_table()
+            self.random_table(self.lambda_value, self.max_rule_number)
         elif self.langton == 'table':
-            self.walk_trough()
+            self.walk_through(self.lambda_value)
         else:
             self.build_rule_set()
             
         if self.plot:
             self.create_graph()
             self.plot = False
+        
+        
 
     def draw(self):
         """Draws the current state of the grid."""
@@ -266,7 +269,7 @@ class CASim(Model):
         random selection of states from all possible states as we sequentially fill in the 
         transitions that make up a delta function."""
         import random
-        rule_set = np.zeros(self.max_rule_number)
+        rule_set = np.zeros(self.k ** (self.r *2 +1))
         # Generate uniform random number g in [0, 1]
         for cell in range(len(rule_set)):
             r = random.random()
@@ -282,9 +285,10 @@ class CASim(Model):
     def walk_through(self, Lambda):
         """In the table-walk-through method, we start with a delta function consisting entirely of
         transitions to the quiescent state, so that lambda = 0.0  (but  note restrictions  below)."""
-        n = round(abs(Lambda * self.max_rule_number -self.max_rule_number))
-        ruleset = np.zeros(self.max_rule_number)
-        index_lijst = [index for index in range(self.max_rule_number)]
+        KN = self.k ** (self.r *2 +1)
+        n = round(abs(Lambda * KN - KN))
+        ruleset = np.zeros(KN)
+        index_lijst = [index for index in range(KN)]
         
         import random
         random_indexes = set()
@@ -293,14 +297,15 @@ class CASim(Model):
             random_indexes.add(random.choice(index_lijst))
 
         for index in random_indexes:
-            ruleset[index] = np.random.randint(1, self.k+1)
+            ruleset[index] = np.random.randint(1, self.k)
         
-        return ruleset     
+        self.rule_set = ruleset
+        
     
     def return_df(self):
         """When creating a dataframe out of the csv files, the first row are used as head
         To circumvent this the following function is created"""        
-        df = pd.read_csv("rule_class_wolfram.csv")
+        df = pd.read_csv('rule_class_wolfram.csv')
         df.rename(columns={'0': 'rule', '1': 'wolfram class'}, inplace=True)
 
         # New row data
@@ -342,9 +347,60 @@ class CASim(Model):
         fig.show()
     
 
+    def entropy_graph(self):
+        """The experiment entailed the average single-cell Shannon entropy for lambda with the table-walk-through method 
+        for the ruleset and the parameters lambda 0.1 until 0.9 with steps of 0.02, k=2, r=1, matrix shape 64x64 excluding 
+        the initial state and 10 different random initial states."""
+        all_runs = []
+
+        for _ in range(10):
+            initial_row = np.random.randint(0, self.k, size=64)
+
+            for lambda_value in range(10, 91, 2):
+                lambda_value /= 100
+                self.walk_through(lambda_value)
+                rule = sum(bit * (2 ** i) for i, bit in enumerate(self.rule_set[::-1])) # This is to convert binary list back to rule number
+                matrix = [self.make_new_gen(initial_row, rule)]
+
+                for _ in range(63):
+                    matrix.append(self.make_new_gen(matrix[-1], rule))
+                
+                entropies = []
+                for cell_states in np.array(matrix).T:
+                    rest, state_counts = np.unique(cell_states, return_counts=True)
+                    probs = state_counts / len(cell_states)
+                    
+                    average_entropy = -np.sum([p * np.log2(p) if p > 0 else 0 for p in probs]) # Shannon entropy formula
+                    entropies.append(average_entropy)
+
+                all_runs.append([lambda_value, np.mean(entropies)])    
+        
+        df = pd.DataFrame(all_runs, columns=['Lambda', 'Average_H'])
+
+        import plotly.graph_objects as go
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=df['Lambda'],
+            y=df['Average_H'],
+            mode='markers',
+            marker=dict(size=10, color='#FF4500')
+        ))
+
+        fig.update_layout(
+            title='Average Single Cell Entropy (H) over Lambda Space for 25600 CA generations',
+            xaxis=dict(title='Lambda'),
+            yaxis=dict(title='Average H'),
+        )
+
+        # Show the plot
+        fig.show()
+
     
 if __name__ == '__main__':
     sim = CASim()    
+    sim.entropy_graph()
     sim.calculate_lambda()
     from pyics import GUI
     cx = GUI(sim)
