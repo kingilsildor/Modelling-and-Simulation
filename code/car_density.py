@@ -22,13 +22,14 @@ class CASim(Model):
 
         self.t = 0
         self.config = None
+        self.car_flow = []
 
         self.make_param('r', 1)
         self.make_param('k', 2)
         self.make_param('width', 50)
         self.make_param('height', 50)
         self.make_param('rule', 184, setter=self.setter_rule)        
-        self.make_param('density', 40)        
+        self.make_param('density', 0.40)        
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -64,10 +65,9 @@ class CASim(Model):
     def setup_initial_row(self):
         """Returns an array of length `width' with the initial state for each of
         the cells in the first row. Values should be between 0 and k."""        
-        initial = None         
-        probablity = self.density / 100 
-        if ( 0 <= self.density <= 100):
-            initial = np.random.choice(self.k, size=self.width, p=[1 - probablity, probablity])        
+        initial = None
+        if ( 0 <= self.density <= 1):
+            initial = np.random.choice(self.k, size=self.width, p=[1 - self.density, self.density])        
         else:
             np.random.seed(self.density)
             initial = np.random.randint(0, self.k, size=self.width)
@@ -99,6 +99,7 @@ class CASim(Model):
         row) and applying the rule to determine the state of the cells."""
         self.t += 1
         if self.t >= self.height:
+            self.car_flow_df()
             return True     
 
         for patch in range(self.width):
@@ -109,8 +110,17 @@ class CASim(Model):
             indices = [i % self.width
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
-            self.config[self.t, patch] = self.check_rule(values)    
- 
+            self.config[self.t, patch] = self.check_rule(values)
+            
+            if patch == 49:
+                self.car_flow.append(self.check_rule(values))
+    
+    def car_flow_df(self):
+        """ Calculate the amount of cars that cross the right-hand side
+        system boundary per unit of time."""
+        print(sum(self.car_flow)) 
+            
+    
 if __name__ == '__main__':
     sim = CASim()    
     from pyics import GUI
