@@ -118,25 +118,38 @@ class CASim(Model):
         system boundary per unit of time."""    
         if (self.config[self.t, 0] == 0 and self.config[self.t, self.width - 1] == 1):
             self.car_flow += 1
-
-
     
-def run_simulation_for_density(sim, density, N=50, T=1000):
+def run_simulation_for_density(sim, density, sim_amount=30, N=50, T=1000):
+    """Runs a simulation with specified density on a traffic simulation object
+    for a given time (T) and road length (N), resetting the simulation and 
+    returning the resulting car flow."""
     sim.density = density
     sim.width = N
     sim.reset()
+    
+    average_density = []
+    for _ in range(sim_amount): 
+        for _ in range(T):
+            sim.step()
+            average_density.append(sim.car_flow)
 
-    for _ in range(T):
-        sim.step()
-
-    print(f"Density: {round(density, 2)}, Car Flow: {sim.car_flow}")
+    # print(f"Density: {round(density, 2)}, Car Flow: {sim.car_flow}")
+    return np.round(np.average(average_density),0)
 
 if __name__ == '__main__':
     sim = CASim()
     densities = np.arange(0, 1.05, 0.05)
 
+    df = pd.DataFrame(columns=['density', 'car flow'])
     for density in densities:        
-        run_simulation_for_density(sim, density)
+        df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density)]
+    print(df)
+    
+    import plotly.express as px
+    fig = px.scatter(df, y="car flow", x="density")
+    fig.update_traces(marker={'size': 15})
+    fig.show()
+
 
 # from pyics import GUI
 # cx = GUI(sim)
