@@ -16,19 +16,16 @@ def decimal_to_base_k(n, k):
 
     return digits[::-1]
 
+
 class CASim(Model):
     def __init__(self):
         Model.__init__(self)
 
-        self.t = 0
-        self.config = None
-
-        self.make_param('r', 1)
-        self.make_param('k', 2)
-        self.make_param('width', 50)
-        self.make_param('height', 50)
-        self.make_param('rule', 184, setter=self.setter_rule)        
-        self.make_param('initial', 14)        
+        self.t = 1000
+        self.r = 1
+        self.k = 2
+        self.width = 50
+        self.rule = 184
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -59,61 +56,92 @@ class CASim(Model):
 
         for num in inp:
             base_index = base_index * self.k + num
+
         return reversed_ruleset[int(base_index)]
 
-    def setup_initial_row(self):
+    def setup_initial_row(self, percentage):
         """Returns an array of length `width' with the initial state for each of
         the cells in the first row. Values should be between 0 and k."""        
-        initial = None          
-        if self.initial == 1:           
-            initial = np.zeros(self.width)
-            initial[self.width//2] = 1
-        else:
-            np.random.seed(self.initial)
-            initial = np.random.randint(0, self.k, size=self.width)
-            
-        return initial
+        zeros = round((1-percentage) * self.width) * [0]
+        ones = round(percentage * self.width) * [1]
+        initial_row = zeros + ones
 
-    def reset(self):
-        """Initializes the configuration of the cells and converts the entered
-        rule number to a rule set."""
-        self.t = 0
-        self.config = np.zeros([self.height, self.width])
-        self.config[0, :] = self.setup_initial_row()
-        self.build_rule_set()  
+        import random
+        random.shuffle(initial_row)
+        
+        return initial_row[:50]
+
+    def make_new_gen(self, row):
+        new_gen_row = []
+        length_row = len(row)
+        
+        for num in range(length_row):
+            if num == 0:
+                current_row = [row[-1]] + list(row[:2])
+                new_value = self.check_rule(current_row)
+                new_gen_row.append(new_value)
+            elif num == length_row-1:
+                current_row = list(row[length_row-2:]) + [row[0]]
+                new_value = self.check_rule(current_row)
+                new_gen_row.append(new_value)
+            else:
+                current_row = list(row[num-1:num+2])
+                new_value = self.check_rule(current_row)
+                new_gen_row.append(new_value)
+        
+        return new_gen_row
                   
-    def draw(self):
-        """Draws the current state of the grid."""
-        import matplotlib
-        import matplotlib.pyplot as plt
+    def density_plot(self):
+        self.setter_rule(self.rule)
+        self.build_rule_set()
 
-        plt.cla()
-        if not plt.gca().yaxis_inverted():
-            plt.gca().invert_yaxis()
-        plt.imshow(self.config, interpolation='none', vmin=0, vmax=self.k - 1,
-                cmap=matplotlib.cm.binary)
-        plt.axis('image')
-        plt.title('t = %d' % self.t)
+        density_dict = {}
+        
+        for percentage in range(0,105, 5):
+            
+            percentage /=100
+            row = self.setup_initial_row(percentage)
+            matrix = [row]
+            
+            for _ in range(self.t):
+                row = self.make_new_gen(row)
+                matrix.append(row)
 
-    def step(self):
-        """Performs a single step of the simulation by advancing time (and thus
-        row) and applying the rule to determine the state of the cells."""
-        self.t += 1
-        if self.t >= self.height:
-            return True     
+            last_row = np.array(matrix).T[-1]
+            count = 0
+            status = True
+            
+            for space in last_row:
+                if status and space and len(last_row) != sum(last_row):
+                    count +=1
+                    status = False
+                elif not status and not space:
+                    status = True
+            
+            density_dict[percentage] = count
+   
+        import pandas as pd
+ 
+        df = pd.DataFrame.from_dict(data=density_dict, orient='index')
+        
+        import plotly.graph_objects as go
 
-        for patch in range(self.width):
-            # We want the items r to the left and to the right of this patch,
-            # while wrapping around (e.g. index -1 is the last item on the row).
-            # Since slices do not support this, we create an array with the
-            # indices we want and use that to index our grid.
-            indices = [i % self.width
-                    for i in range(patch - self.r, patch + self.r + 1)]
-            values = self.config[self.t - 1, indices]
-            self.config[self.t, patch] = self.check_rule(values)    
+        fig = go.Figure(data=go.Scatter(x=df.index, y= df.iloc[:, 0]))
+        fig.show()
+
+
+                
+                
+
+
+
+            
+            
+
+
+
  
 if __name__ == '__main__':
-    sim = CASim()    
-    from pyics import GUI
-    cx = GUI(sim)
-    cx.start()
+    CASim().density_plot()
+    
+
