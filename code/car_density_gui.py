@@ -66,7 +66,7 @@ class CASim(Model):
 
         return reversed_ruleset[int(base_index)]
 
-    def setup_initial_row(self):
+    def setup_initial_row(self, percentage):
         """Returns an array of length `width' with the initial state for each of
         the cells in the first row. Values should be between 0 and k."""        
         initial = None
