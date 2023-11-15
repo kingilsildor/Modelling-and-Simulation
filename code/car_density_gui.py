@@ -156,7 +156,7 @@ if __name__ == '__main__':
     plot_df(sim, N=3, T=5)
     plot_df(sim)
 
-
+  
 
 # from pyics import GUI
 # cx = GUI(sim)
