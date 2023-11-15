@@ -17,6 +17,7 @@ def decimal_to_base_k(n, k):
 
     return digits[::-1]
 
+
 class CASim(Model):
     def __init__(self):
         Model.__init__(self)
@@ -62,6 +63,7 @@ class CASim(Model):
 
         for num in inp:
             base_index = base_index * self.k + num
+
         return reversed_ruleset[int(base_index)]
 
     def setup_initial_row(self):
@@ -84,26 +86,6 @@ class CASim(Model):
         self.config[0, :] = self.setup_initial_row()
         self.build_rule_set()  
                   
-    def draw(self):
-        """Draws the current state of the grid."""
-        import matplotlib
-        import matplotlib.pyplot as plt
-
-        plt.cla()
-        if not plt.gca().yaxis_inverted():
-            plt.gca().invert_yaxis()
-        plt.imshow(self.config, interpolation='none', vmin=0, vmax=self.k - 1,
-                cmap=matplotlib.cm.binary)
-        plt.axis('image')
-        plt.title('t = %d' % self.t)
-
-    def step(self):
-        """Performs a single step of the simulation by advancing time (and thus
-        row) and applying the rule to determine the state of the cells."""
-        self.t += 1
-        if self.t >= self.height:
-            return True     
-
         for patch in range(self.width):
             # We want the items r to the left and to the right of this patch,
             # while wrapping around (e.g. index -1 is the last item on the row).
