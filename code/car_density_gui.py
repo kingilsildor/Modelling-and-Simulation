@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import plotly.express as px
 from pyics import Model
 
 def decimal_to_base_k(n, k):
@@ -133,32 +134,28 @@ def run_simulation_for_density(sim, density, sim_amount=30, N=50, T=1000):
         for _ in range(T):
             sim.step()
             average_density.append(sim.car_flow)
-    
-    # print(f"Density: {round(density, 2)}, Car Flow: {sim.car_flow}")
     return np.round(np.average(average_density),0)
 
 def plot_df(sim, sim_amount=30, N=50, T=1000):
-    """Plot the car density for different values"""
+    """Plot the car flow for different density values"""
     densities = np.arange(0, 1.05, 0.05)
 
     df = pd.DataFrame(columns=['density', 'car flow'])
     for density in densities:        
         df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=T)]
-    print(df)
     
-    import plotly.express as px
-
 
     fig = px.scatter(df, x="density", y="car flow",
-                    labels={'car flow': 'Car Flow', 'density': 'Density'},
-                    title=f'Scatter plot of Car Flow with Density range [0-1] with a road length of {N} and {T} time steps')
-
+                    labels={'car flow': 'Car Flow', 'density': 'Density'})
     fig.update_traces(marker={'size': 15})
-
+    fig.update_layout(font=dict(size=20),     
+                      font_color="black",
+                      title_font_family="Times New Roman")
     fig.show()
 
 
 def estimation_graph(repeat,  N=50, T=1000):
+    sim.reset()
     densities = [x/100 for x in range(0,105, 5)]
     t_ranges = [count for count in range(100, 1100, 100)]
     n = 0
@@ -167,7 +164,7 @@ def estimation_graph(repeat,  N=50, T=1000):
 
 
     for t in t_ranges:
-        print(f"Loop 1, zit nu op t range: {t}!")  
+        print(f"Loop 1, zit nu op t range: {t}")  
         for _ in range(repeat):
             for density in densities:        
                 df.loc[len(df)] = [n, round(density, 2), run_simulation_for_density(sim, density, N=50, T=t), t]
@@ -198,23 +195,23 @@ def estimation_graph(repeat,  N=50, T=1000):
     
     fig = px.scatter(result, x='time steps', y='probability correct', title='Influence time steps amount on correctness probablility')
 
+    fig = px.scatter(result, x='time steps', y='probability correct')
+                    #  title='Influence time steps amount on correctness probablility')
     fig.update_layout(
         xaxis_title='Time Steps',
-        yaxis_title='Probability Correct'
-    )
+        yaxis_title='Probability Correct',
+        font=dict(size=20),
+        font_color="black",
+        title_font_family="Times New Roman")
     fig.update_traces(marker={'size': 15})
-
-    fig.show()
-    
-
+    fig.show()   
+    	
 if __name__ == '__main__':
     sim = CASim()
-    # plot_df(sim, N=3, T=5)
-    # plot_df(sim, N=50, T=4000)
-    estimation_graph(20)
+    plot_df(sim, N=3, T=5)
+    plot_df(sim)
+    estimation_graph(10)
 
-
-
-# from pyics import GUI
-# cx = GUI(sim)
-# cx.start()
+    # from pyics import GUI
+    # cx = GUI(sim)
+    # cx.start()
