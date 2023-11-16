@@ -104,7 +104,7 @@ class CASim(Model):
         self.t += 1
         if self.t >= self.height:
             return True     
-
+        
         for patch in range(self.width):
             # We want the items r to the left and to the right of this patch,
             # while wrapping around (e.g. index -1 is the last item on the row).
@@ -114,7 +114,7 @@ class CASim(Model):
                     for i in range(patch - self.r, patch + self.r + 1)]
             values = self.config[self.t - 1, indices]
             self.config[self.t, patch] = self.check_rule(values)
-            
+         
         """ Calculate the amount of cars that cross the right-hand side
         system boundary per unit of time."""    
         if (self.config[self.t, 0] == 0 and self.config[self.t, self.width - 1] == 1):
@@ -126,6 +126,7 @@ def run_simulation_for_density(sim, density, sim_amount=30, N=50, T=1000):
     returning the resulting car flow."""
     sim.density = density
     sim.width = N
+    sim.height = T
     sim.reset()
     
     average_density = []
@@ -133,7 +134,8 @@ def run_simulation_for_density(sim, density, sim_amount=30, N=50, T=1000):
         for _ in range(T):
             sim.step()
             average_density.append(sim.car_flow)
-
+    
+    # print(f"Density: {round(density, 2)}, Car Flow: {sim.car_flow}")
     return np.round(np.average(average_density),0)
 
 def plot_df(sim, sim_amount=30, N=50, T=1000):
@@ -144,6 +146,12 @@ def plot_df(sim, sim_amount=30, N=50, T=1000):
     for density in densities:        
         df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=T)]
     
+    import plotly.express as px
+
+
+    fig = px.scatter(df, x="density", y="car flow",
+                    labels={'car flow': 'Car Flow', 'density': 'Density'},
+                    title=f'Scatter plot of Car Flow with Density range [0-1] with a road length of {N} and {T} time steps')
 
     fig = px.scatter(df, x="density", y="car flow",
                     labels={'car flow': 'Car Flow', 'density': 'Density'})
@@ -157,47 +165,60 @@ def plot_df(sim, sim_amount=30, N=50, T=1000):
 def estimation_graph(repeat,  N=50, T=1000):
     sim.reset()
     densities = [x/100 for x in range(0,105, 5)]
-    t_ranges = [count for count in range(100, 500, 100)]
+    t_ranges = [count for count in range(100, 1100, 100)]
+    n = 0
 
-    df = pd.DataFrame(columns=['density', 'car flow', 'time steps'])
+    df = pd.DataFrame(columns=['group', 'density', 'car flow', 'time steps'])
+
 
     for t in t_ranges:
         print(f"Loop 1, zit nu op t range: {t}")  
         for _ in range(repeat):
             for density in densities:        
-                df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=t), t]
-        
-    for t in t_ranges:  
-        print(f"Loop 2, zit nu op t range: {t}")  
-        for dens in densities:
-            values = df.loc[(df['time steps'] == t) & (df['density'] == dens)]
-            values_mean = values['car flow'].mean()
-            for index in values.index:
-                density = df.at[index, 'density']
-                df.at[index, 'critical density'] = 0 if density == 0.0 or density == 1.0 else abs(values.at[index, 'car flow'] / values_mean- 1)
+                df.loc[len(df)] = [n, round(density, 2), run_simulation_for_density(sim, density, N=50, T=t), t]
+            n +=1
 
-    result = df[df['critical density'] <= 0.05].groupby('time steps')['critical density'].count().reset_index(name='count')
-    result['probability correct'] = result['count'] / len(densities)
-    result = result.drop(['count'], axis=1)
+    result = pd.DataFrame(columns=['time steps', 'probability correct'])
     
-    print(result) 
+    for t in t_ranges:  
+        values = df.loc[(df['time steps'] == t)]
+        indexes = values.groupby('group')['car flow'].idxmax()
+        print(indexes)
+        max_density_values = df.loc[indexes, 'density']
+        print(f"max density values{max_density_values}")
+        
+        critical_density = values.loc[values['car flow'].idxmax(), 'density']
+        crit_min, crit_max = critical_density-0.05, critical_density+0.05
+
+        count = 0
+        for val in max_density_values:
+            if val >= crit_min and val <= crit_max:
+                count +=1
+        prob = count/len(max_density_values)
+        result.loc[len(result)] = [t, prob]
+
+    print(result)
+    
+    import plotly.express as px
+    
+    fig = px.scatter(result, x='time steps', y='probability correct', title='Influence time steps amount on correctness probablility')
 
     fig = px.scatter(result, x='time steps', y='probability correct')
                     #  title='Influence time steps amount on correctness probablility')
     fig.update_layout(
         xaxis_title='Time Steps',
-        yaxis_title='Probability Correct',
-        font=dict(size=20),
-        font_color="black",
-        title_font_family="Times New Roman")
+        yaxis_title='Probability Correct'
+    )
     fig.update_traces(marker={'size': 15})
-    fig.show()   
-    	
+
+    fig.show()
+    
+
 if __name__ == '__main__':
     sim = CASim()
-    plot_df(sim, N=3, T=5)
-    plot_df(sim)
-    estimation_graph(10)
+    # plot_df(sim, N=3, T=5)
+    # plot_df(sim, N=50, T=4000)
+    estimation_graph(20)
 
     # from pyics import GUI
     # cx = GUI(sim)
