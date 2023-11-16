@@ -146,11 +146,11 @@ def plot_df(sim, sim_amount=30, N=50, T=1000):
     
 
     fig = px.scatter(df, x="density", y="car flow",
-                    labels={'car flow': 'Car Flow', 'density': 'Density'},
-                    title=f'Scatter plot of Car Flow with Density range [0-1] with a road length of N={N} and T={T} time steps')
-
+                    labels={'car flow': 'Car Flow', 'density': 'Density'})
     fig.update_traces(marker={'size': 15})
-
+    fig.update_layout(font=dict(size=20),     
+                      font_color="black",
+                      title_font_family="Times New Roman")
     fig.show()
 
 
@@ -182,15 +182,16 @@ def estimation_graph(repeat,  N=50, T=1000):
     
     print(result) 
 
-    fig = px.scatter(result, x='time steps', y='probability correct', title='Influence time steps amount on correctness probablility')
-
+    fig = px.scatter(result, x='time steps', y='probability correct')
+                    #  title='Influence time steps amount on correctness probablility')
     fig.update_layout(
         xaxis_title='Time Steps',
-        yaxis_title='Probability Correct'
-    )
-
-    fig.show()
-    
+        yaxis_title='Probability Correct',
+        font=dict(size=20),
+        font_color="black",
+        title_font_family="Times New Roman")
+    fig.update_traces(marker={'size': 15})
+    fig.show()   
     	
 if __name__ == '__main__':
     sim = CASim()
@@ -198,6 +199,6 @@ if __name__ == '__main__':
     plot_df(sim)
     estimation_graph(10)
 
-    from pyics import GUI
-    cx = GUI(sim)
-    cx.start()
+    # from pyics import GUI
+    # cx = GUI(sim)
+    # cx.start()
