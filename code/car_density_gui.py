@@ -148,7 +148,7 @@ def plot_df(sim, sim_amount=30, N=50, T=1000):
     import plotly.express as px
 
 
-    fig = px.scatter(df, x="density", y="car flow", color='car flow', color_continuous_scale='bluered',
+    fig = px.scatter(df, x="density", y="car flow",
                     labels={'car flow': 'Car Flow', 'density': 'Density'},
                     title=f'Scatter plot of Car Flow with Density range [0-1] with a road length of {N} and {T} time steps')
 
