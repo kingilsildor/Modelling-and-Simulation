@@ -150,14 +150,12 @@ def plot_df(sim, sim_amount=30, N=50, T=1000):
     fig.update_traces(marker={'size': 15})
     fig.show()
     
-
+    	
 if __name__ == '__main__':
     sim = CASim()
     plot_df(sim, N=3, T=5)
     plot_df(sim)
 
-
-
-# from pyics import GUI
-# cx = GUI(sim)
-# cx.start()
+    from pyics import GUI
+    cx = GUI(sim)
+    cx.start()
