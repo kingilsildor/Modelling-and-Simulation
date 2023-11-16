@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import plotly.express as px
 from pyics import Model
 
 def decimal_to_base_k(n, k):
@@ -133,24 +134,20 @@ def run_simulation_for_density(sim, density, sim_amount=30, N=50, T=1000):
             sim.step()
             average_density.append(sim.car_flow)
 
-    # print(f"Density: {round(density, 2)}, Car Flow: {sim.car_flow}")
     return np.round(np.average(average_density),0)
 
 def plot_df(sim, sim_amount=30, N=50, T=1000):
-    """Plot the car density for different values"""
+    """Plot the car flow for different density values"""
     densities = np.arange(0, 1.05, 0.05)
 
     df = pd.DataFrame(columns=['density', 'car flow'])
     for density in densities:        
         df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=T)]
-    print(df)
     
-    import plotly.express as px
-
 
     fig = px.scatter(df, x="density", y="car flow",
                     labels={'car flow': 'Car Flow', 'density': 'Density'},
-                    title=f'Scatter plot of Car Flow with Density range [0-1] with a road length of {N} and {T} time steps')
+                    title=f'Scatter plot of Car Flow with Density range [0-1] with a road length of N={N} and T={T} time steps')
 
     fig.update_traces(marker={'size': 15})
 
@@ -158,19 +155,20 @@ def plot_df(sim, sim_amount=30, N=50, T=1000):
 
 
 def estimation_graph(repeat,  N=50, T=1000):
+    sim.reset()
     densities = [x/100 for x in range(0,105, 5)]
     t_ranges = [count for count in range(100, 500, 100)]
 
     df = pd.DataFrame(columns=['density', 'car flow', 'time steps'])
 
     for t in t_ranges:
-        print(f"Loop 1, zit nu op t range: {t}!")  
+        print(f"Loop 1, zit nu op t range: {t}")  
         for _ in range(repeat):
             for density in densities:        
                 df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=t), t]
         
     for t in t_ranges:  
-        print(f"Loop 2, zit nu op t range: {t}!")  
+        print(f"Loop 2, zit nu op t range: {t}")  
         for dens in densities:
             values = df.loc[(df['time steps'] == t) & (df['density'] == dens)]
             values_mean = values['car flow'].mean()
@@ -182,10 +180,8 @@ def estimation_graph(repeat,  N=50, T=1000):
     result['probability correct'] = result['count'] / len(densities)
     result = result.drop(['count'], axis=1)
     
-    print(result)
-    
-    import plotly.express as px
-    
+    print(result) 
+
     fig = px.scatter(result, x='time steps', y='probability correct', title='Influence time steps amount on correctness probablility')
 
     fig.update_layout(
@@ -198,8 +194,8 @@ def estimation_graph(repeat,  N=50, T=1000):
     	
 if __name__ == '__main__':
     sim = CASim()
-    # plot_df(sim, N=3, T=5)
-    # plot_df(sim)
+    plot_df(sim, N=3, T=5)
+    plot_df(sim)
     estimation_graph(10)
 
     from pyics import GUI
