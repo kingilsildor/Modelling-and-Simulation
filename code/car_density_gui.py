@@ -158,34 +158,39 @@ def plot_df(sim, sim_amount=30, N=50, T=1000):
 
 
 def estimation_graph(repeat,  N=50, T=1000):
-    from xgboost import XGBRegressor
-    from sklearn.preprocessing import PolynomialFeatures
-    densities = np.arange(0, 1.05, 0.05)
+    densities = [x/100 for x in range(0,105, 5)]
+    t_ranges = [count for count in range(100, 500, 100)]
 
-    df = pd.DataFrame(columns=['density', 'car flow'])
-    for _ in range(repeat):
-        for density in densities:        
-            df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=T)]
+    df = pd.DataFrame(columns=['density', 'car flow', 'time steps'])
+
+    for t in t_ranges:
+        print(f"Loop 1, zit nu op t range: {t}!")  
+        for _ in range(repeat):
+            for density in densities:        
+                df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=t), t]
         
+    for t in t_ranges:  
+        print(f"Loop 2, zit nu op t range: {t}!")  
+        for dens in densities:
+            values = df.loc[(df['time steps'] == t) & (df['density'] == dens)]
+            values_mean = values['car flow'].mean()
+            for index in values.index:
+                density = df.at[index, 'density']
+                df.at[index, 'critical density'] = 0 if density == 0.0 or density == 1.0 else abs(values.at[index, 'car flow'] / values_mean- 1)
 
-    X = df['density'].values.reshape(-1, 1)
-    poly = PolynomialFeatures(degree=2)
-    X_poly = poly.fit_transform(X)
-
-    model = XGBRegressor()
-
-    model.fit(X_poly, df['car flow'])
-    df['predictions'] = model.predict(X_poly)
-    df = df.sort_values(by='density')
-
+    result = df[df['critical density'] <= 0.05].groupby('time steps')['critical density'].count().reset_index(name='count')
+    result['probability correct'] = result['count'] / len(densities)
+    result = result.drop(['count'], axis=1)
+    
+    print(result)
+    
     import plotly.express as px
     
-    fig = px.scatter(df, x='density', y='car flow', title='XGBRegressor for Car Flow with different densities')
-    fig.add_scatter(x=df['density'], y=df['predictions'], mode='lines', name='XGBRegressor Line')
+    fig = px.scatter(result, x='time steps', y='probability correct', title='Influence time steps amount on correctness probablility')
 
     fig.update_layout(
-        xaxis_title='Density',
-        yaxis_title='Car Flow'
+        xaxis_title='Time Steps',
+        yaxis_title='Probability Correct'
     )
 
     fig.show()
@@ -195,7 +200,7 @@ if __name__ == '__main__':
     sim = CASim()
     # plot_df(sim, N=3, T=5)
     # plot_df(sim)
-    estimation_graph(5)
+    estimation_graph(10)
 
 
 
