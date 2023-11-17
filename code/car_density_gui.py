@@ -22,17 +22,13 @@ class CASim(Model):
     def __init__(self):
         Model.__init__(self)
 
-        self.t = 0
-        self.config = None
-        self.car_flow = 0
-        self.car_dict = {}
+        self.t = 1000
+        self.N = 50
 
         self.make_param('r', 1)
         self.make_param('k', 2)
-        self.make_param('width', 50)
-        self.make_param('height', 1000)
-        self.make_param('rule', 184, setter=self.setter_rule)        
-        self.make_param('density', 0.40)        
+        self.make_param('rule', 184)        
+     
 
     def setter_rule(self, val):
         """Setter for the rule parameter, clipping its value between 0 and the
@@ -65,46 +61,23 @@ class CASim(Model):
             base_index = base_index * self.k + num
         return reversed_ruleset[int(base_index)]
 
-    def setup_initial_row(self):
+    def setup_initial_row(self, density):
         """Returns an array of length `width' with the initial state for each of
         the cells in the first row. Values should be between 0 and k."""        
         initial = None
-        if ( 0 <= self.density <= 1):
-            initial = np.random.choice(self.k, size=self.width, p=[1 - self.density, self.density])        
+        if ( 0 <= density <= 1):
+            initial = np.random.choice(self.k, size=self.N, p=[1 - density, density])        
         else:
-            np.random.seed(self.density)
-            initial = np.random.randint(0, self.k, size=self.width)
+            np.random.seed(density)
+            initial = np.random.randint(0, self.k, size=self.N)
         return initial
-
-    def reset(self):
-        """Initializes the configuration of the cells and converts the entered
-        rule number to a rule set."""
-        self.t = 0
-        self.car_flow = 0
-        self.config = np.zeros([self.height, self.width])
-        self.config[0, :] = self.setup_initial_row()
-        self.build_rule_set()  
                   
-    def draw(self):
-        """Draws the current state of the grid."""
-        import matplotlib
-        import matplotlib.pyplot as plt
-
-        plt.cla()
-        if not plt.gca().yaxis_inverted():
-            plt.gca().invert_yaxis()
-        plt.imshow(self.config, interpolation='none', vmin=0, vmax=self.k - 1,
-                cmap=matplotlib.cm.binary)
-        plt.axis('image')
-        plt.title('t = %d' % self.t)
-
-    def step(self):
-        """Performs a single step of the simulation by advancing time (and thus
-        row) and applying the rule to determine the state of the cells."""
-        self.t += 1
-        if self.t >= self.height:
-            return True     
+    def make_new_gen(self, row):
+        """ Make new gen, makes a new generation of the input row according to the build ruleset"""
+        new_gen_row = []
+        length_row = len(row)
         
+<<<<<<< HEAD
         for patch in range(self.width):
             # We want the items r to the left and to the right of this patch,
             # while wrapping around (e.g. index -1 is the last item on the row).
@@ -186,23 +159,117 @@ def estimation_graph(repeat,  N=50, T=1000):
         print(indexes)
         max_density_values = df.loc[indexes, 'density']
         print(f"max density values{max_density_values}")
+=======
+        for num in range(length_row):
+            if num == 0:
+                # Infer the first element in the row. 
+                current_row = list(row[length_row-self.r:]) + list(row[:self.r+1])
+            elif num == length_row-1:
+                # Infer the last element in the row.
+                current_row = list(row[length_row-self.r-1:]) + list(row[:self.r])
+            else:
+                # Infer the remaining elements in the row per element.
+                current_row = list(row[num-self.r:num+self.r+1])
+
+            new_value = self.check_rule(current_row)
+            new_gen_row.append(new_value)
+>>>>>>> 8f6aea8 (Nu werkt alles! Tijd voor weekend!)
         
-        critical_density = values.loc[values['car flow'].idxmax(), 'density']
-        crit_min, crit_max = critical_density-0.05, critical_density+0.05
-
-        count = 0
-        for val in max_density_values:
-            if val >= crit_min and val <= crit_max:
-                count +=1
-        prob = count/len(max_density_values)
-        result.loc[len(result)] = [t, prob]
-
-    print(result)
+        return new_gen_row
     
-    import plotly.express as px
-    
-    fig = px.scatter(result, x='time steps', y='probability correct', title='Influence time steps amount on correctness probablility')
+    def run_simulation_for_density(self, density, sim_amount=30, N=50, T=1000):
+        """Runs sim_amount simulations with specified density on a traffic simulation object
+        for a given time (T) and road length (N), returning the rounded average resulting car 
+        flow of previous mentioned simulations."""
+        self.N = N
+        self.setter_rule(self.rule)
+        self.build_rule_set()
 
+        densities = []
+
+        for _ in range(sim_amount):
+            row = self.setup_initial_row(density)
+            count = 0
+
+            # Count occurrences when the last element is a car and there is an available space in the 
+            # first element for placing a car next generation (doesn't include last generation since the car will not move)
+            for _ in range(T):
+                if row[0] == 0 and row[-1] != 0:
+                    count +=1
+
+                row = self.make_new_gen(row)
+                
+            densities.append(count)
+
+        return round(np.mean(densities))
+        
+    def plot_df(self, sim_amount=30, N=50, T=1000):
+        """Plot the car flow for different density values"""
+        densities = [x/100 for x in range(0,105, 5)]
+
+        df = pd.DataFrame(columns=['density', 'car flow'])
+        for density in densities:        
+            df.loc[len(df)] = [round(density, 2), self.run_simulation_for_density(density=density, N=N, T=T)]
+        
+
+        fig = px.scatter(df, x="density", y="car flow",
+                        labels={'car flow': 'Car Flow', 'density': 'Density'})
+
+        fig.update_traces(marker={'size': 15})
+        fig.update_layout(font=dict(size=20))
+
+        fig.show()
+
+
+    def estimation_graph(self, repeat, N=50, T=1000):
+        """ First calculates different time ranges (t), repeat amount of times for 21 different densities. 
+        For each time range the critical density is calculated and compared to this density the correctness probability is calculated.
+        In the end a plot is made for all time ranges and their corresponding probability of correctness"""
+        densities = [x/100 for x in range(0,105, 5)]
+        t_ranges = [count for count in range(10, 60)]
+        group = 0
+        
+        df = pd.DataFrame(columns=['group', 'density', 'car flow', 'time steps'])
+
+        for t in t_ranges:
+            for _ in range(repeat):
+                for density in densities:        
+                    df.loc[len(df)] = [group, round(density, 2), self.run_simulation_for_density(density=density, N=N, T=t), t]
+                group +=1
+            print(f"T-range: {t}, is done! (last one is {t_ranges[-1]})")  
+
+        result = pd.DataFrame(columns=['time steps', 'probability correct'])
+        
+        for t in t_ranges:  
+            # For each time range repeat group the transition phase density is calculated (The highest car flow value is chosen since the transition begins when the car flow amount declines)
+            values = df.loc[(df['time steps'] == t)]
+            indexes = values.groupby('group')['car flow'].idxmax()
+            max_density_values = df.loc[indexes, 'density']
+            
+            # Critical density is choses by chosing the highest measured car flow and the corresponding density
+            critical_density = values.loc[values['car flow'].idxmax(), 'density']
+            crit_min, crit_max = critical_density-0.05, critical_density+0.05
+
+            # Beneath calculates the probability of densities being in range of the critical density
+            count = 0
+            for val in max_density_values:
+                if val >= crit_min and val <= crit_max:
+                    count +=1
+
+            prob = count/len(max_density_values)
+            result.loc[len(result)] = [t, prob]
+        
+        fig = px.scatter(result, x='time steps', y='probability correct', title='Influence time steps amount on correctness probablility')
+
+        fig.update_layout(
+            xaxis_title='Time Steps',
+            yaxis_title='Probability Correct')
+
+        fig.update_traces(marker={'size': 15})
+        fig.show()   
+            
+
+<<<<<<< HEAD
     fig = px.scatter(result, x='time steps', y='probability correct')
                     #  title='Influence time steps amount on correctness probablility')
     fig.update_layout(
@@ -219,7 +286,11 @@ if __name__ == '__main__':
     # plot_df(sim, N=3, T=5)
     # plot_df(sim, N=50, T=4000)
     estimation_graph(20)
+=======
+if __name__ == '__main__':
+    sim = CASim()
+    sim.plot_df(N=3, T=5)
+    sim.plot_df()
+    sim.estimation_graph(20)
+>>>>>>> 8f6aea8 (Nu werkt alles! Tijd voor weekend!)
 
-    # from pyics import GUI
-    # cx = GUI(sim)
-    # cx.start()
