@@ -142,7 +142,8 @@ class CASim(Model):
         For each time range the critical density is calculated and compared to this density the correctness probability is calculated.
         In the end a plot is made for all time ranges and their corresponding probability of correctness"""
         densities = [x/100 for x in range(0,105, 5)]
-        t_ranges = [count for count in range(10, 60)]
+        t_min, t_max = int(N*0.5), int(N*2)
+        t_ranges = [count for count in range(t_min, t_max+1)]
         group = 0
         
         df = pd.DataFrame(columns=['group', 'density', 'car flow', 'time steps'])
@@ -161,7 +162,7 @@ class CASim(Model):
             values = df.loc[(df['time steps'] == t)]
             indexes = values.groupby('group')['car flow'].idxmax()
             max_density_values = df.loc[indexes, 'density']
-            
+
             # Critical density is choses by chosing the highest measured car flow and the corresponding density
             critical_density = values.loc[values['car flow'].idxmax(), 'density']
             crit_min, crit_max = critical_density-0.05, critical_density+0.05
@@ -179,9 +180,11 @@ class CASim(Model):
 
         fig.update_layout(
             xaxis_title='Time Steps',
-            yaxis_title='Probability Correct')
+            yaxis_title='Probability Correct',
+            font=dict(size=20))
 
         fig.update_traces(marker={'size': 15})
+
         fig.show()   
             
 
