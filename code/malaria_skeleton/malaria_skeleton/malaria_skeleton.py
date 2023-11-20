@@ -102,9 +102,6 @@ class Model:
             # set the hungry state from false to true after a number of time steps has passed.
             if np.random.uniform() <= self.mosquitoHungryProb and not m.hungry:
                 m.hungry = True
-                self.mosquitoHungryProb = 0.5
-            else:
-                self.mosquitoHungryProb -= 0.1
 
         for j, h in enumerate(self.humanPopulation):
             """
@@ -158,10 +155,10 @@ class Mosquito:
                       - periodic boundaries: implement a wrap around i.e. if
                         y+deltaY > ymax -> y = 0. This is the option currently implemented.
         """
+        
         self.position[0] = (self.position[0] + deltaX) % width
         self.position[1] = (self.position[1] + deltaY) % height
-
-
+        
 class Human:
     def __init__(self, x, y, state):
         """
