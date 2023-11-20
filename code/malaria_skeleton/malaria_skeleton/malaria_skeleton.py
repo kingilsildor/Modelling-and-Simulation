@@ -161,19 +161,21 @@ class Human:
         """
         self.position = [x, y]
         self.state = state
+        
+        # TODO: people can't die atm
+        # TODO: people can't get infected atm
+        # TODO: Their is no way for people to get immune
+        # TODO: New people aren't born
 
 
 if __name__ == '__main__':
-    """
-    Simulation parameters
-    """
+    # Simulation parameters
     fileName = 'simulation'
     timeSteps = 100
     t = 0
     plotData = False
-    """
-    Run a simulation for an indicated number of timesteps.
-    """
+    
+    # Run a simulation for an indicated number of timesteps.
     file = open(fileName + '.csv', 'w')
     sim = Model()
     vis = malaria_visualize.Visualization(sim.height, sim.width)
@@ -188,9 +190,7 @@ if __name__ == '__main__':
     vis.persist()
 
     if plotData:
-        """
-        Make a plot by from the stored simulation data.
-        """
+        # Make a plot by from the stored simulation data.
         data = np.loadtxt(fileName+'.csv', delimiter=',')
         time = data[:, 0]
         infectedCount = data[:, 1]
