@@ -7,7 +7,7 @@ class Model:
     def __init__(self, width=50, height=50, nHuman=10, nMosquito=20,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
                  humanInfectionProb=0.25, mosquitoInfectionProb=0.9,
-                 biteProb=1.0):
+                 mosquitoHungryProb=0.5, biteProb=1.0):
         """
         Model parameters
         Initialize the model with the width and height parameters.
@@ -18,6 +18,7 @@ class Model:
         self.nMosquito = nMosquito
         self.humanInfectionProb = humanInfectionProb
         self.mosquitoInfectionProb = mosquitoInfectionProb
+        self.mosquitoHungryProb = mosquitoHungryProb
         self.biteProb = biteProb
         # etc.
 
@@ -97,10 +98,13 @@ class Model:
                    and np.random.uniform() <= self.biteProb:
                     m.bite(h, self.humanInfectionProb,
                            self.mosquitoInfectionProb)
-        """
-        To implement: set the hungry state from false to true after a
-                     number of time steps has passed.
-        """
+
+            # set the hungry state from false to true after a number of time steps has passed.
+            if np.random.uniform() <= self.mosquitoHungryProb and not m.hungry:
+                m.hungry = True
+                self.mosquitoHungryProb = 0.5
+            else:
+                self.mosquitoHungryProb -= 0.1
 
         for j, h in enumerate(self.humanPopulation):
             """
@@ -179,7 +183,7 @@ if __name__ == '__main__':
     fileName = 'simulation'
     timeSteps = 100
     t = 0
-    plotData = False
+    plotData = True
     
     # Run a simulation for an indicated number of timesteps.
     file = open(fileName + '.csv', 'w')
