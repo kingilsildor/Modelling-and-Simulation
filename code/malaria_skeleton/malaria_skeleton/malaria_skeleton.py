@@ -44,12 +44,18 @@ class Model:
         objects is initialized with the "infected" state.
         """
         humanPopulation = []
+        humanCoordinates = []
         for i in range(self.nHuman):
             x = np.random.randint(self.width)
             y = np.random.randint(self.height)
-            """
-            To implement: Humans may not have overlapping positions.
-            """
+            
+            # Humans may not have overlapping positions.
+            while (x,y) in humanCoordinates:
+                x = np.random.randint(self.width)
+                y = np.random.randint(self.height)
+                
+            humanCoordinates.append((x,y))
+
             if (i / self.nHuman) <= initHumanInfected:
                 state = 'I'  # I for infected
             else:
