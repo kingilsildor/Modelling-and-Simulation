@@ -73,96 +73,13 @@ class CASim(Model):
         return initial
                   
     def make_new_gen(self, row):
-        """Make new gen, makes a new generation of the input row according to the build ruleset"""
+        """ Make new gen, makes a new generation of the input row according to the build ruleset"""
         new_gen_row = []
         length_row = len(row)
         
-<<<<<<< HEAD
-        for patch in range(self.width):
-            # We want the items r to the left and to the right of this patch,
-            # while wrapping around (e.g. index -1 is the last item on the row).
-            # Since slices do not support this, we create an array with the
-            # indices we want and use that to index our grid.
-            indices = [i % self.width
-                    for i in range(patch - self.r, patch + self.r + 1)]
-            values = self.config[self.t - 1, indices]
-            self.config[self.t, patch] = self.check_rule(values)
-         
-        """ Calculate the amount of cars that cross the right-hand side
-        system boundary per unit of time."""    
-        if (self.config[self.t, 0] == 0 and self.config[self.t, self.width - 1] == 1):
-            self.car_flow += 1
-    
-def run_simulation_for_density(sim, density, sim_amount=30, N=50, T=1000):
-    """Runs a simulation with specified density on a traffic simulation object
-    for a given time (T) and road length (N), resetting the simulation and 
-    returning the resulting car flow."""
-    sim.density = density
-    sim.width = N
-    sim.height = T
-    sim.reset()
-    
-    average_density = []
-    for _ in range(sim_amount): 
-        for _ in range(T):
-            sim.step()
-            average_density.append(sim.car_flow)
-    
-    # print(f"Density: {round(density, 2)}, Car Flow: {sim.car_flow}")
-    return np.round(np.average(average_density),0)
-
-def plot_df(sim, sim_amount=30, N=50, T=1000):
-    """Plot the car flow for different density values"""
-    densities = np.arange(0, 1.05, 0.05)
-
-    df = pd.DataFrame(columns=['density', 'car flow'])
-    for density in densities:        
-        df.loc[len(df)] = [round(density, 2), run_simulation_for_density(sim, density, N=N, T=T)]
-    
-    import plotly.express as px
-
-
-    fig = px.scatter(df, x="density", y="car flow",
-                    labels={'car flow': 'Car Flow', 'density': 'Density'},
-                    title=f'Scatter plot of Car Flow with Density range [0-1] with a road length of {N} and {T} time steps')
-
-    fig = px.scatter(df, x="density", y="car flow",
-                    labels={'car flow': 'Car Flow', 'density': 'Density'})
-    fig.update_traces(marker={'size': 15})
-    fig.update_layout(font=dict(size=20),     
-                      font_color="black",
-                      title_font_family="Times New Roman")
-    fig.show()
-
-
-def estimation_graph(repeat,  N=50, T=1000):
-    sim.reset()
-    densities = [x/100 for x in range(0,105, 5)]
-    t_ranges = [count for count in range(100, 1100, 100)]
-    n = 0
-
-    df = pd.DataFrame(columns=['group', 'density', 'car flow', 'time steps'])
-
-
-    for t in t_ranges:
-        print(f"Loop 1, zit nu op t range: {t}")  
-        for _ in range(repeat):
-            for density in densities:        
-                df.loc[len(df)] = [n, round(density, 2), run_simulation_for_density(sim, density, N=50, T=t), t]
-            n +=1
-
-    result = pd.DataFrame(columns=['time steps', 'probability correct'])
-    
-    for t in t_ranges:  
-        values = df.loc[(df['time steps'] == t)]
-        indexes = values.groupby('group')['car flow'].idxmax()
-        print(indexes)
-        max_density_values = df.loc[indexes, 'density']
-        print(f"max density values{max_density_values}")
-=======
         for num in range(length_row):
             if num == 0:
-                # Infer the first element in the row.
+                # Infer the first element in the row. 
                 current_row = list(row[length_row-self.r:]) + list(row[:self.r+1])
             elif num == length_row-1:
                 # Infer the last element in the row.
@@ -173,7 +90,6 @@ def estimation_graph(repeat,  N=50, T=1000):
 
             new_value = self.check_rule(current_row)
             new_gen_row.append(new_value)
->>>>>>> 8f6aea8 (Nu werkt alles! Tijd voor weekend!)
         
         return new_gen_row
     
@@ -191,7 +107,7 @@ def estimation_graph(repeat,  N=50, T=1000):
             row = self.setup_initial_row(density)
             count = 0
 
-            # Count occurrences when the last element is a car and there is an available space in the 
+            # Count occurrences when the last element is a car and there is an available space in the
             # first element for placing a car next generation (doesn't include last generation since the car will not move)
             for _ in range(T):
                 if row[0] == 0 and row[-1] != 0:
@@ -208,7 +124,7 @@ def estimation_graph(repeat,  N=50, T=1000):
         densities = [x/100 for x in range(0,105, 5)]
 
         df = pd.DataFrame(columns=['density', 'car flow'])
-        for density in densities:
+        for density in densities:        
             df.loc[len(df)] = [round(density, 2), self.run_simulation_for_density(density=density, N=N, T=T)]
         
 
@@ -224,10 +140,10 @@ def estimation_graph(repeat,  N=50, T=1000):
     def estimation_graph(self, repeat, N=50, T=1000):
         """ First calculates different time ranges (t), repeat amount of times for 21 different densities. 
         For each time range the critical density is calculated and compared to this density the correctness probability is calculated.
-        In the end a plot is made for all time ranges and their corresponding probability of correctness.
-        This function can take some time to load."""
+        In the end a plot is made for all time ranges and their corresponding probability of correctness"""
         densities = [x/100 for x in range(0,105, 5)]
-        t_ranges = [count for count in range(10, 60)]
+        t_min, t_max = int(N*0.5), int(N*2)
+        t_ranges = [count for count in range(t_min, t_max+1)]
         group = 0
         
         df = pd.DataFrame(columns=['group', 'density', 'car flow', 'time steps'])
@@ -246,10 +162,10 @@ def estimation_graph(repeat,  N=50, T=1000):
             values = df.loc[(df['time steps'] == t)]
             indexes = values.groupby('group')['car flow'].idxmax()
             max_density_values = df.loc[indexes, 'density']
-            
+
             # Critical density is choses by chosing the highest measured car flow and the corresponding density
             critical_density = values.loc[values['car flow'].idxmax(), 'density']
-            crit_min, crit_max = critical_density - 0.05, critical_density + 0.05
+            crit_min, crit_max = critical_density-0.05, critical_density+0.05
 
             # Beneath calculates the probability of densities being in range of the critical density
             count = 0
@@ -264,35 +180,16 @@ def estimation_graph(repeat,  N=50, T=1000):
 
         fig.update_layout(
             xaxis_title='Time Steps',
-            yaxis_title='Probability Correct')
+            yaxis_title='Probability Correct',
+            font=dict(size=20))
 
         fig.update_traces(marker={'size': 15})
-        fig.update_layout(font=dict(size=20))
+
         fig.show()
-            
-
-<<<<<<< HEAD
-    fig = px.scatter(result, x='time steps', y='probability correct')
-                    #  title='Influence time steps amount on correctness probablility')
-    fig.update_layout(
-        xaxis_title='Time Steps',
-        yaxis_title='Probability Correct'
-    )
-    fig.update_traces(marker={'size': 15})
-
-    fig.show()
-    
+        
 
 if __name__ == '__main__':
     sim = CASim()
-    # plot_df(sim, N=3, T=5)
-    # plot_df(sim, N=50, T=4000)
-    estimation_graph(20)
-=======
-if __name__ == '__main__':
-    sim = CASim()
-    # sim.plot_df(N=3, T=5)
-    # sim.plot_df()
+    sim.plot_df(N=3, T=5)
+    sim.plot_df()
     sim.estimation_graph(20)
->>>>>>> 8f6aea8 (Nu werkt alles! Tijd voor weekend!)
-
