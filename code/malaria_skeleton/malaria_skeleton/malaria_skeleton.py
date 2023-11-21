@@ -138,10 +138,10 @@ class Model:
             let_mosquito_live_cycle(m)
 
         for j, h in enumerate(self.humanPopulation):
-            """
-            To implement: update the human population.
-            """
-
+            pass
+        """
+        To implement: update the human population.
+        """
         """
         To implement: update the data/statistics e.g. infectedCount,
                       deathCount, etc.
