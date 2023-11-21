@@ -3,7 +3,7 @@ import numpy as np
 import malaria_visualize
 
 class Model:
-    def __init__(self, width=50, height=50, nHuman=10, nMosquito=20,
+    def __init__(self, width=50, height=50, mosquitoPopDensity=0.10, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
                  humanInfectionProb=0.25, mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
                  mosquitoFeedingCycle=15, biteProb=1.0):
@@ -13,8 +13,8 @@ class Model:
         """
         self.height = height
         self.width = width
-        self.nHuman = nHuman
-        self.nMosquito = nMosquito
+        self.nHuman = int(width * height * humanPopDensity)
+        self.nMosquito = int(width * height * mosquitoPopDensity)
         self.humanInfectionProb = humanInfectionProb
         self.mosquitoInfectionProb = mosquitoInfectionProb
         self.mosquitoFeedingCycle = mosquitoFeedingCycle
@@ -102,7 +102,7 @@ class Model:
                 m.daysNotHungry = 0
                 m.hungry = True
         
-        def let_mosquito_live_cycle(m):
+        def mosquito_live_cycle(m):
             m.age += 1
 
             def create_new_mosquito(m):
@@ -135,7 +135,7 @@ class Model:
                            self.mosquitoInfectionProb):
                         self.infectedCount += 1
             set_mosquito_hungry(m)
-            let_mosquito_live_cycle(m)
+            # let_mosquito_live_cycle(m)
 
         for j, h in enumerate(self.humanPopulation):
             pass
@@ -226,7 +226,7 @@ if __name__ == '__main__':
     
     # Run a simulation for an indicated number of timesteps.
     file = open(fileName + '.csv', 'w')
-    sim = Model(nHuman=100)
+    sim = Model(height=50, width=50)
     vis = malaria_visualize.Visualization(sim.height, sim.width)
     print('Starting simulation')
     while t < timeSteps:
