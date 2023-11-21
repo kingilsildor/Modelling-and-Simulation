@@ -1,1 +1,58 @@
 Muggen steken om de 2 weken - https://capemaycountynj.gov/489/Mosquito-Biology
+
+
+
+
+
+
+
+Preventief:
+Voordat je het hebt:
+- Netten: 
+    1. https://link.springer.com/article/10.1007/s00436-010-2232-0
+        -  >70% protections 
+
+- Spray:
+    1. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9308352/ 
+        - 0.35 bite prob
+
+- House modifications:
+    1. doi: 10.1002/14651858.CD013398.pub4 
+        - 0.63 ratio muggen 
+
+
+Als je het hebt:
+- Medications:
+    1. https://pubmed.ncbi.nlm.nih.gov/33081784/
+        - Effectiveness of artemisinin-based drugs was 67.4%
+
+- Vaccines:
+    1. https://www.nejm.org/doi/full/10.1056/NEJMoa2026330
+        - 72.9% against death from malaria
+
+
+
+Incubatie:
+- https://www.cdc.gov/malaria/about/disease.html
+    The incubation period in most cases varies from 7 to 30 days.
+
+
+Populatie percentage:
+- 0.232
+https://nl.wikipedia.org/wiki/Nigeria
+
+
+Deathrate Nigeria:
+- https://theconversation.com/nigeria-has-africas-highest-malaria-death-rate-progress-is-being-made-but-its-not-enough-204148 
+
+
+Populatie Muggen:
+Mensen = 214.028.302
+Muggen = 223804632  
+muggen = 1,0457 van mensen
+Groeirate muggen = 0.02408
+Maar dat is nog niet de populatie malaria muggen
+Anopheles mosquitoes zijn vrijwel hoofdverantwoordelijke malaria dus nog vinden welk percentage de Anopheles mosquitoes is van alle muggen
+deze nog lezen: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0028347 
+
+https://worldpopulationreview.com/country-rankings/mosquito-population-by-country 
