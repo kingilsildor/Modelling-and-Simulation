@@ -2,12 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import malaria_visualize
 
-
 class Model:
     def __init__(self, width=50, height=50, nHuman=10, nMosquito=20,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
                  humanInfectionProb=0.25, mosquitoInfectionProb=0.9,
-                 mosquitoHungryProb=0.5, biteProb=1.0):
+                 mosquitoFeedingCycle=15, biteProb=1.0):
         """
         Model parameters
         Initialize the model with the width and height parameters.
@@ -18,7 +17,7 @@ class Model:
         self.nMosquito = nMosquito
         self.humanInfectionProb = humanInfectionProb
         self.mosquitoInfectionProb = mosquitoInfectionProb
-        self.mosquitoHungryProb = mosquitoHungryProb
+        self.mosquitoFeedingCycle = mosquitoFeedingCycle
         self.biteProb = biteProb
         # etc.
 
@@ -91,6 +90,16 @@ class Model:
         2.  Update the human population. If a human dies remove it from the
             population, and add a replacement human.
         """
+        
+        def set_mosquito_hungry(m):
+            """ Set the hungry state from False to True after a number of time steps has passed."""
+            if not m.hungry:
+                m.daysNotHungry += 1
+            
+            if m.daysNotHungry == self.mosquitoFeedingCycle:
+                m.daysNotHungry = 0
+                m.hungry = True
+        
         for i, m in enumerate(self.mosquitoPopulation):
             m.move(self.height, self.width)
             for h in self.humanPopulation:
@@ -98,10 +107,7 @@ class Model:
                    and np.random.uniform() <= self.biteProb:
                     m.bite(h, self.humanInfectionProb,
                            self.mosquitoInfectionProb)
-
-            # set the hungry state from false to true after a number of time steps has passed.
-            if np.random.uniform() <= self.mosquitoHungryProb and not m.hungry:
-                m.hungry = True
+            set_mosquito_hungry(m)
 
         for j, h in enumerate(self.humanPopulation):
             """
@@ -113,6 +119,8 @@ class Model:
                       deathCount, etc.
         """
         return self.infectedCount, self.deathCount
+    
+
 
 
 class Mosquito:
@@ -124,6 +132,7 @@ class Mosquito:
         """
         self.position = [x, y]
         self.hungry = hungry
+        self.daysNotHungry = 0
         self.infected = False
 
     def bite(self, human, humanInfectionProb, mosquitoInfectionProb):
@@ -178,7 +187,8 @@ class Human:
 if __name__ == '__main__':
     # Simulation parameters
     fileName = 'simulation'
-    timeSteps = 100
+    # Amount of days
+    timeSteps = 10000
     t = 0
     plotData = True
     
