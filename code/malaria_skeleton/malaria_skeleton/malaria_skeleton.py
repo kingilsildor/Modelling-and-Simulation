@@ -211,7 +211,6 @@ class Human:
         self.state = state
         
         # TODO: people can't die atm
-        # TODO: people can't get infected atm
         # TODO: Their is no way for people to get immune
         # TODO: New people aren't born
 
