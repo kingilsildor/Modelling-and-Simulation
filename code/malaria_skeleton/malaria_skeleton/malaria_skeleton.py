@@ -2,23 +2,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 import malaria_visualize
 
-
 class Model:
-    def __init__(self, width=50, height=50, nHuman=10, nMosquito=20,
+    def __init__(self, width=50, height=50, mosquitoPopDensity=0.10, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
-                 humanInfectionProb=0.25, mosquitoInfectionProb=0.9,
-                 mosquitoHungryProb=0.5, biteProb=1.0):
+                 humanInfectionProb=0.25, mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
+                 mosquitoFeedingCycle=15, biteProb=1.0):
         """
         Model parameters
         Initialize the model with the width and height parameters.
         """
         self.height = height
         self.width = width
-        self.nHuman = nHuman
-        self.nMosquito = nMosquito
+        self.nHuman = int(width * height * humanPopDensity)
+        self.nMosquito = int(width * height * mosquitoPopDensity)
         self.humanInfectionProb = humanInfectionProb
         self.mosquitoInfectionProb = mosquitoInfectionProb
-        self.mosquitoHungryProb = mosquitoHungryProb
+        self.mosquitoFeedingCycle = mosquitoFeedingCycle
+        self.mosquitoMinage = mosquitoMinage
+        self.mosquitoMaxage = mosquitoMaxage
         self.biteProb = biteProb
         # etc.
 
@@ -36,7 +37,7 @@ class Model:
         """
         self.humanPopulation = self.set_human_population(initHumanInfected)
         self.mosquitoPopulation = self.set_mosquito_population(initMosquitoHungry)
-
+    
     def set_human_population(self, initHumanInfected):
         """
         This function makes the initial human population, by iteratively adding
@@ -63,7 +64,7 @@ class Model:
                 state = 'S'  # S for susceptible
             humanPopulation.append(Human(x, y, state))
         return humanPopulation
-
+    
     def set_mosquito_population(self, initMosquitoHungry):
         """
         This function makes the initial mosquito population, by iteratively
@@ -91,23 +92,56 @@ class Model:
         2.  Update the human population. If a human dies remove it from the
             population, and add a replacement human.
         """
+        
+        def set_mosquito_hungry(m):
+            """ Set the hungry state from False to True after a number of time steps has passed."""
+            if not m.hungry:
+                m.daysNotHungry += 1
+            
+            if m.daysNotHungry == self.mosquitoFeedingCycle:
+                m.daysNotHungry = 0
+                m.hungry = True
+        
+        def mosquito_live_cycle(m):
+            m.age += 1
+
+            def create_new_mosquito(m):
+                print("New One")
+                x = np.random.randint(self.width)
+                y = np.random.randint(self.height)
+                m.position = [x, y]
+                m.hungry = False
+                m.daysNotHungry = 0
+                m.age = 0
+                m.indivualDeathProb = 0
+                m.infected = False
+            
+            if m.age >= self.mosquitoMinage and m.age <= self.mosquitoMaxage:
+                if np.random.uniform() <= m.indivualDeathProb:
+                    create_new_mosquito(m)
+                elif m.age >= self.mosquitoMaxage:
+                    create_new_mosquito(m)
+                else:
+                    m.indivualDeathProb += 0.001
+            
+
+        
         for i, m in enumerate(self.mosquitoPopulation):
             m.move(self.height, self.width)
             for h in self.humanPopulation:
                 if m.position == h.position and m.hungry\
                    and np.random.uniform() <= self.biteProb:
-                    m.bite(h, self.humanInfectionProb,
-                           self.mosquitoInfectionProb)
-
-            # set the hungry state from false to true after a number of time steps has passed.
-            if np.random.uniform() <= self.mosquitoHungryProb and not m.hungry:
-                m.hungry = True
+                    if m.bite(h, self.humanInfectionProb,
+                           self.mosquitoInfectionProb):
+                        self.infectedCount += 1
+            set_mosquito_hungry(m)
+            # let_mosquito_live_cycle(m)
 
         for j, h in enumerate(self.humanPopulation):
-            """
-            To implement: update the human population.
-            """
-
+            pass
+        """
+        To implement: update the human population.
+        """
         """
         To implement: update the data/statistics e.g. infectedCount,
                       deathCount, etc.
@@ -124,6 +158,9 @@ class Mosquito:
         """
         self.position = [x, y]
         self.hungry = hungry
+        self.daysNotHungry = 0
+        self.age = 0
+        self.indivualDeathProb = 0
         self.infected = False
 
     def bite(self, human, humanInfectionProb, mosquitoInfectionProb):
@@ -134,13 +171,17 @@ class Mosquito:
         mosquito can be infected.
         After a mosquito bites it is no longer hungry.
         """
+        humanInfected = False
         if self.infected and human.state == 'S':
             if np.random.uniform() <= humanInfectionProb:
                 human.state = 'I'
+                humanInfected = True
         elif not self.infected and human.state == 'I':
             if np.random.uniform() <= mosquitoInfectionProb:
                 self.infected = True
         self.hungry = False
+        
+        return humanInfected
 
     def move(self, height, width):
         """
@@ -170,7 +211,6 @@ class Human:
         self.state = state
         
         # TODO: people can't die atm
-        # TODO: people can't get infected atm
         # TODO: Their is no way for people to get immune
         # TODO: New people aren't born
 
@@ -178,13 +218,14 @@ class Human:
 if __name__ == '__main__':
     # Simulation parameters
     fileName = 'simulation'
-    timeSteps = 100
+    # Amount of days
+    timeSteps = 500
     t = 0
     plotData = True
     
     # Run a simulation for an indicated number of timesteps.
     file = open(fileName + '.csv', 'w')
-    sim = Model()
+    sim = Model(height=50, width=50)
     vis = malaria_visualize.Visualization(sim.height, sim.width)
     print('Starting simulation')
     while t < timeSteps:
