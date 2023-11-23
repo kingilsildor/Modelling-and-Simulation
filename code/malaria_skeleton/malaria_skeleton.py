@@ -283,7 +283,7 @@ if __name__ == '__main__':
     
     # Run a simulation for an indicated number of timesteps.
     file = open(fileName + '.csv', 'w')
-    sim = Model(height=50, width=50, humanPopDensity=0.1)
+    sim = Model(height=50, width=50)
     vis = malaria_visualize.Visualization(sim.height, sim.width)
     print('Starting simulation')
     while t < timeSteps:
