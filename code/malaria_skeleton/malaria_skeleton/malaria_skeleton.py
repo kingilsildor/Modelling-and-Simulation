@@ -5,7 +5,8 @@ import malaria_visualize
 class Model:
     def __init__(self, width=50, height=50, mosquitoPopDensity=0.10, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
-                 humanInfectionProb=0.25, mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
+                 humanInfectionProb=0.25, humanImmuneProb=0.01,
+                 mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
                  mosquitoFeedingCycle=15, biteProb=1.0):
         """
         Model parameters
@@ -16,26 +17,25 @@ class Model:
         self.nHuman = int(width * height * humanPopDensity)
         self.nMosquito = int(width * height * mosquitoPopDensity)
         self.humanInfectionProb = humanInfectionProb
+        self.humanImmuneProb = humanImmuneProb
         self.mosquitoInfectionProb = mosquitoInfectionProb
         self.mosquitoFeedingCycle = mosquitoFeedingCycle
         self.mosquitoMinage = mosquitoMinage
         self.mosquitoMaxage = mosquitoMaxage
         self.biteProb = biteProb
-        # etc.
-
+        
         """
         Data parameters
         To record the evolution of the model
         """
         self.infectedCount = 0
         self.deathCount = 0
-        # etc.
 
         """
         Population setters
         Make a data structure in this case a list with the humans and mosquitos.
         """
-        self.humanPopulation = self.set_human_population(initHumanInfected)
+        self.humanPopulation, self.humanCoordinates = self.set_human_population(initHumanInfected)
         self.mosquitoPopulation = self.set_mosquito_population(initMosquitoHungry)
     
     def set_human_population(self, initHumanInfected):
@@ -48,22 +48,34 @@ class Model:
         humanPopulation = []
         humanCoordinates = []
         for i in range(self.nHuman):
+            x, y, state = self.create_new_human(i, humanCoordinates, initHumanInfected)
+            humanPopulation.append(Human(x, y, state))
+            humanCoordinates.append([x,y])
+
+        return humanPopulation, humanCoordinates
+
+    def create_new_human(self, i, humanCoordinates, initHumanInfected=0.2):
+        """ Initial create new humans based on the starting condition of the simulation.
+        Afterwards it will be used to create new humans after a human dies.
+        For this i=-1 is used to better handle the random infection at birth."""
+        x = np.random.randint(self.width)
+        y = np.random.randint(self.height)
+        
+        # Humans may not have overlapping positions.
+        while (x,y) in humanCoordinates:
             x = np.random.randint(self.width)
             y = np.random.randint(self.height)
+        
+        if (i / self.nHuman) <= initHumanInfected:
+            state = 'I'  # I for infected
+        elif (i == -1) and np.random.uniform <= initHumanInfected:
+            state = 'I'  # To handle new born babies
+        elif np.random.uniform() <= self.humanImmuneProb:
+            state = 'R'  # R for removed / immune 
+        else:
+            state = 'S'  # S for susceptible
             
-            # Humans may not have overlapping positions.
-            while (x,y) in humanCoordinates:
-                x = np.random.randint(self.width)
-                y = np.random.randint(self.height)
-                
-            humanCoordinates.append((x,y))
-
-            if (i / self.nHuman) <= initHumanInfected:
-                state = 'I'  # I for infected
-            else:
-                state = 'S'  # S for susceptible
-            humanPopulation.append(Human(x, y, state))
-        return humanPopulation
+        return x, y, state
     
     def set_mosquito_population(self, initMosquitoHungry):
         """
@@ -74,14 +86,24 @@ class Model:
         """
         mosquitoPopulation = []
         for i in range(self.nMosquito):
-            x = np.random.randint(self.width)
-            y = np.random.randint(self.height)
-            if (i / self.nMosquito) <= initMosquitoHungry:
-                hungry = True
-            else:
-                hungry = False
+            x,y, hungry = self.create_new_mosquito(i, initMosquitoHungry)
             mosquitoPopulation.append(Mosquito(x, y, hungry))
         return mosquitoPopulation
+    
+    def create_new_mosquito(self, i, initMosquitoHungry=0.5):
+        """ Initial create new mosquito based on the starting condition of the simulation.
+        Afterwards it will be used to create new mosquito after a mosquito dies.
+        For this i=-1 is used to better handle the random hungry at birth."""              
+        x = np.random.randint(self.width)
+        y = np.random.randint(self.height)
+        if (i / self.nMosquito) <= initMosquitoHungry:
+            hungry = True
+        elif (i == -1) and np.random.uniform <= initMosquitoHungry:
+            hungry = True
+        else:
+            hungry = False
+            
+        return x, y, hungry
 
     def update(self):
         """
@@ -104,27 +126,23 @@ class Model:
         
         def mosquito_live_cycle(m):
             m.age += 1
-
-            def create_new_mosquito(m):
-                print("New One")
-                x = np.random.randint(self.width)
-                y = np.random.randint(self.height)
-                m.position = [x, y]
-                m.hungry = False
-                m.daysNotHungry = 0
-                m.age = 0
-                m.indivualDeathProb = 0
-                m.infected = False
+          
+            if (m.age >= self.mosquitoMinage and np.random.uniform() <= m.indivualDeathProb) or\
+                (m.age >= self.mosquitoMaxage):
+                self.mosquitoPopulation.remove(h)
+                x, y, hungry = self.create_new_mosquito(-1)
+                self.mosquitoPopulation.append(Mosquito(x, y, hungry))
+            else:
+                m.indivualDeathProb += 0.001
+        
+        def new_person_born(h):
+            self.humanCoordinates.remove(h.position)
+            self.humanPopulation.remove(h)
+            x, y, state = self.create_new_human(-1, self.humanCoordinates)
             
-            if m.age >= self.mosquitoMinage and m.age <= self.mosquitoMaxage:
-                if np.random.uniform() <= m.indivualDeathProb:
-                    create_new_mosquito(m)
-                elif m.age >= self.mosquitoMaxage:
-                    create_new_mosquito(m)
-                else:
-                    m.indivualDeathProb += 0.001
-            
-
+            self.humanPopulation.append(Human(x, y, state))
+            self.humanCoordinates.append([x,y])
+        
         
         for i, m in enumerate(self.mosquitoPopulation):
             m.move(self.height, self.width)
@@ -208,8 +226,8 @@ class Human:
         (or immune).
         """
         self.position = [x, y]
-        self.state = state
-        
+        self.state = state    
+      
         # TODO: people can't die atm
         # TODO: Their is no way for people to get immune
         # TODO: New people aren't born
@@ -219,7 +237,7 @@ if __name__ == '__main__':
     # Simulation parameters
     fileName = 'simulation'
     # Amount of days
-    timeSteps = 500
+    timeSteps = 10
     t = 0
     plotData = True
     
