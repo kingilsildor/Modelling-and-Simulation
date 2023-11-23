@@ -155,7 +155,7 @@ class Model:
             for h in self.humanPopulation:
                 if m.position == h.position and m.hungry\
                    and np.random.uniform() <= self.biteProb:
-                    if m.bite(h, self.humanInfectionProb,
+                    if m.bite(h, self.humanInfectionProb, self.humanReInfectionProb,
                            self.mosquitoInfectionProb):
                         self.infectedCount += 1
             set_mosquito_hungry(m)
