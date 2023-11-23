@@ -3,7 +3,7 @@ import numpy as np
 import malaria_visualize
 
 class Model:
-    def __init__(self, width=50, height=50, mosquitoPopDensity=0.10, humanPopDensity=0.23,
+    def __init__(self, width=50, height=50, mosquitoPopDensity=0.35, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
                  humanInfectionProb=0.25, mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
                  mosquitoFeedingCycle=15, biteProb=1.0):
@@ -14,7 +14,7 @@ class Model:
         self.height = height
         self.width = width
         self.nHuman = int(width * height * humanPopDensity)
-        self.nMosquito = int(width * height * mosquitoPopDensity)
+        self.nMosquito = int(width * height * mosquitoPopDensity * humanPopDensity)
         self.humanInfectionProb = humanInfectionProb
         self.mosquitoInfectionProb = mosquitoInfectionProb
         self.mosquitoFeedingCycle = mosquitoFeedingCycle
