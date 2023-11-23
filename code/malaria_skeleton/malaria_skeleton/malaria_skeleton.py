@@ -5,7 +5,7 @@ import malaria_visualize
 class Model:
     def __init__(self, width=50, height=50, mosquitoPopDensity=0.10, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
-                 humanInfectionProb=0.25, humanImmuneProb=0.01, 
+                 humanInfectionProb=0.25, humanImmuneProb=0.01, humanReInfectionProb=0.15,
                  illnessDeathProb=0.03, illnessIncubationTime=4, illnessContagiousTime = 30,
                  mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
                  mosquitoFeedingCycle=15, biteProb=1.0):
@@ -19,6 +19,7 @@ class Model:
         self.nMosquito = int(width * height * mosquitoPopDensity)
         self.humanInfectionProb = humanInfectionProb
         self.humanImmuneProb = humanImmuneProb
+        self.humanReInfectionProb = humanReInfectionProb
         self.illnessDeathProb = illnessDeathProb
         self.illnessIncubationTime = illnessIncubationTime
         self.illnessContagiousTime = illnessContagiousTime
@@ -199,7 +200,7 @@ class Mosquito:
         self.indivualDeathProb = 0
         self.infected = False
 
-    def bite(self, human, humanInfectionProb, mosquitoInfectionProb):
+    def bite(self, human, humanInfectionProb, humanReInfectionProb, mosquitoInfectionProb):
         """
         Function that handles the biting. If the mosquito is infected and the
         target human is susceptible, the human can be infected.
@@ -210,6 +211,10 @@ class Mosquito:
         humanInfected = False
         if self.infected and human.state == 'S':
             if np.random.uniform() <= humanInfectionProb:
+                human.infected = True
+                humanInfected = True
+        if self.infected and human.state == 'R':
+            if np.random.uniform() <= humanReInfectionProb:
                 human.infected = True
                 humanInfected = True
         elif not self.infected and human.state == 'I':
@@ -251,6 +256,8 @@ class Human:
         
     def humanResistance(self, illnessContagiousTime):
         if self.daysInfected >= illnessContagiousTime:
+            self.infected = False
+            self.daysInfected = 0
             self.state = 'R'
             return True
         return False
