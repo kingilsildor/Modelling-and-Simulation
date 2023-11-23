@@ -56,7 +56,11 @@ Malaria muggen percentage tegenover mensen populatie:  0.34856
 https://worldpopulationreview.com/country-rankings/mosquito-population-by-country 
 
 
+Patient 14 dagen besmettelijk
+bron: https://www.zorg-en-gezondheid.be/sites/default/files/2022-04/Malaria_Korte%20Richtlijnen_0.pdf 
 
+Reinfection rate: 15%
+- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8711853/
 
 
 Huidige $ bevolking measures in Nigeria:
