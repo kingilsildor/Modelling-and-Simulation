@@ -71,3 +71,57 @@ bron: https://www.researchgate.net/profile/Omosivie-Maduka/publication/353703033
 
 Gemiddelde werkweek: 38 uur
 bron: https://worldpopulationreview.com/country-rankings/average-work-week-by-country
+
+
+populatie aantal: 218.541.212
+bron: https://data.worldbank.org/indicator/SP.POP.TOTL?end=2022&locations=NG&start=2022&view=bar 
+
+
+
+Extra cases door geen netten: 39375000.
+Extra cases door geen spray: 11104167.
+Extra doden door geen vaccine/meds: 14000.
+Echte aantal cases: 150479167. 
+Echte aantal deaths: 472505 met een deathrate van 0.00314.
+
+
+Code bovenstaande berekeningen:
+"""
+cases = 100000000
+deaths = 300000
+
+sleep = 7.5
+awake = 24-sleep
+athome = 3.5
+
+sleepnets = 0.54
+spray = 0.41
+vaccine_med = 0.02
+windownets = 0.01
+
+effect_nets = 0.3
+effect_spray = 0.35
+effect_window_nets = 0.65
+med_vacs = 0.3
+
+cases_no_nets = round(cases * sleepnets * (sleep / 24) )
+extra_no_nets = round((cases_no_nets / effect_nets) - cases_no_nets)
+
+cases_no_spray = cases * spray * (athome / 24) 
+extra_no_spray = round((cases_no_spray / effect_spray) - cases_no_spray)
+
+cases_no_meds_vacs = deaths * vaccine_med 
+extra_no_meds_vacs = round((cases_no_meds_vacs / med_vacs) - cases_no_meds_vacs)
+
+real_death_rate = (deaths + extra_no_meds_vacs) / cases
+real_cases = round(cases + extra_no_nets + extra_no_spray)
+real_deaths = round(real_cases * real_death_rate)
+
+
+print(f'Extra cases door geen netten: {extra_no_nets}.')
+print(f'Extra cases door geen spray: {extra_no_spray}.')
+print(f'Extra doden door geen vaccine/meds: {extra_no_meds_vacs}.')
+print(f'Echte aantal cases: {real_cases}. \nEchte aantal deaths: {real_deaths} met een deathrate van {real_death_rate}.')
+print(f'Echte aantal cases percentage van bevolking: {round(real_cases / 218541212, 4)}')
+
+"""
