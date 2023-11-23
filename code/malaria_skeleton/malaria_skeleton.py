@@ -3,7 +3,7 @@ import numpy as np
 import malaria_visualize
 
 class Model:
-    def __init__(self, width=50, height=50, mosquitoPopDensity=0.10, humanPopDensity=0.23,
+    def __init__(self, width=50, height=50, nHuman=100, nMosquito=50,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
                  humanInfectionProb=0.25, humanImmuneProb=0.001, humanReInfectionProb=0.15,
                  illnessDeathProb=0.03, illnessIncubationTime=4, illnessContagiousTime = 30,
@@ -15,8 +15,8 @@ class Model:
         """
         self.height = height
         self.width = width
-        self.nHuman = int(width * height * humanPopDensity)
-        self.nMosquito = int(width * height * mosquitoPopDensity)
+        self.nHuman = nHuman
+        self.nMosquito = nMosquito
         self.humanInfectionProb = humanInfectionProb
         self.humanImmuneProb = humanImmuneProb
         self.humanReInfectionProb = humanReInfectionProb
@@ -135,7 +135,7 @@ class Model:
           
             if (m.age >= self.mosquitoMinage and np.random.uniform() <= m.indivualDeathProb) or\
                 (m.age >= self.mosquitoMaxage):
-                self.mosquitoPopulation.remove(h)
+                self.mosquitoPopulation.remove(m)
                 x, y, hungry = self.create_new_mosquito(-1)
                 self.mosquitoPopulation.append(Mosquito(x, y, hungry))
             else:
@@ -159,7 +159,7 @@ class Model:
                            self.mosquitoInfectionProb):
                         self.infectedCount += 1
             set_mosquito_hungry(m)
-            # let_mosquito_live_cycle(m)
+            mosquito_live_cycle(m)
 
         for j, h in enumerate(self.humanPopulation):
             if h.infected:
@@ -279,7 +279,7 @@ if __name__ == '__main__':
     # Amount of days
     timeSteps = 500
     t = 0
-    plotData = True
+    plotData = False
     
     # Run a simulation for an indicated number of timesteps.
     file = open(fileName + '.csv', 'w')
