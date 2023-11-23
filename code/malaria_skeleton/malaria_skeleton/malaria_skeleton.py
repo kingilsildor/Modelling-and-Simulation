@@ -5,7 +5,7 @@ import malaria_visualize
 class Model:
     def __init__(self, width=50, height=50, mosquitoPopDensity=0.10, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
-                 humanInfectionProb=0.25, humanImmuneProb=0.01, humanReInfectionProb=0.15,
+                 humanInfectionProb=0.25, humanImmuneProb=0.001, humanReInfectionProb=0.15,
                  illnessDeathProb=0.03, illnessIncubationTime=4, illnessContagiousTime = 30,
                  mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
                  mosquitoFeedingCycle=15, biteProb=1.0):
@@ -76,8 +76,8 @@ class Model:
             state = 'I'  # I for infected
         elif (i == -1) and np.random.uniform <= initHumanInfected:
             state = 'S'  # To handle new born babies
-        elif np.random.uniform() <= self.humanImmuneProb:
-            state = 'R'  # R for removed / immune 
+        # elif np.random.uniform() <= self.humanImmuneProb:
+        #     state = 'R'  # R for removed / immune 
         else:
             state = 'S'  # S for susceptible
             
@@ -162,18 +162,16 @@ class Model:
             # let_mosquito_live_cycle(m)
 
         for j, h in enumerate(self.humanPopulation):
-            for h in self.humanPopulation:
-                if h.infected:
-                    h.daysInfected += 1
+            if h.infected:
+                h.daysInfected += 1
                     
-                if (h.humanResistance(self.illnessContagiousTime)):
-                    self.resistCount += 1
-                    
-                h.humanSymptoms(self.illnessIncubationTime)
-                                
-                if np.random.uniform() <= self.illnessDeathProb and h.state == 'I':
-                    self.deathCount += 1
-                    new_person_born(h)
+            if (h.humanResistance(self.illnessContagiousTime)):
+                self.resistCount += 1
+                
+            h.humanSymptoms(self.illnessIncubationTime)
+            if np.random.uniform() <= self.illnessDeathProb and h.state == 'I':
+                self.deathCount += 1
+                new_person_born(h)
                 
                 
         """
@@ -273,17 +271,13 @@ class Human:
             self.infected = True
             return True
         return False
-      
-        # TODO: people can't die atm
-        # TODO: Their is no way for people to get immune
-        # TODO: New people aren't born
 
 
 if __name__ == '__main__':
     # Simulation parameters
     fileName = 'simulation'
     # Amount of days
-    timeSteps = 50
+    timeSteps = 500
     t = 0
     plotData = True
     
