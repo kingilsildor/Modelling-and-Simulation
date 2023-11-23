@@ -5,7 +5,8 @@ import malaria_visualize
 class Model:
     def __init__(self, width=50, height=50, mosquitoPopDensity=0.10, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
-                 humanInfectionProb=0.25, humanImmuneProb=0.01,
+                 humanInfectionProb=0.25, humanImmuneProb=0.01, 
+                 illnessDeathProb=0.03, illnessIncubationTime=4, illnessContagiousTime = 30,
                  mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
                  mosquitoFeedingCycle=15, biteProb=1.0):
         """
@@ -18,6 +19,9 @@ class Model:
         self.nMosquito = int(width * height * mosquitoPopDensity)
         self.humanInfectionProb = humanInfectionProb
         self.humanImmuneProb = humanImmuneProb
+        self.illnessDeathProb = illnessDeathProb
+        self.illnessIncubationTime = illnessIncubationTime
+        self.illnessContagiousTime = illnessContagiousTime
         self.mosquitoInfectionProb = mosquitoInfectionProb
         self.mosquitoFeedingCycle = mosquitoFeedingCycle
         self.mosquitoMinage = mosquitoMinage
@@ -30,6 +34,7 @@ class Model:
         """
         self.infectedCount = 0
         self.deathCount = 0
+        self.resistCount = 0
 
         """
         Population setters
@@ -69,7 +74,7 @@ class Model:
         if (i / self.nHuman) <= initHumanInfected:
             state = 'I'  # I for infected
         elif (i == -1) and np.random.uniform <= initHumanInfected:
-            state = 'I'  # To handle new born babies
+            state = 'S'  # To handle new born babies
         elif np.random.uniform() <= self.humanImmuneProb:
             state = 'R'  # R for removed / immune 
         else:
@@ -156,7 +161,20 @@ class Model:
             # let_mosquito_live_cycle(m)
 
         for j, h in enumerate(self.humanPopulation):
-            pass
+            for h in self.humanPopulation:
+                if h.infected:
+                    h.daysInfected += 1
+                    
+                if (h.humanResistance(self.illnessContagiousTime)):
+                    self.resistCount += 1
+                    
+                h.humanSymptoms(self.illnessIncubationTime)
+                                
+                if np.random.uniform() <= self.illnessDeathProb and h.state == 'I':
+                    self.deathCount += 1
+                    new_person_born(h)
+                
+                
         """
         To implement: update the human population.
         """
@@ -164,7 +182,7 @@ class Model:
         To implement: update the data/statistics e.g. infectedCount,
                       deathCount, etc.
         """
-        return self.infectedCount, self.deathCount
+        return self.infectedCount, self.deathCount, self.resistCount
 
 
 class Mosquito:
@@ -192,7 +210,7 @@ class Mosquito:
         humanInfected = False
         if self.infected and human.state == 'S':
             if np.random.uniform() <= humanInfectionProb:
-                human.state = 'I'
+                human.infected = True
                 humanInfected = True
         elif not self.infected and human.state == 'I':
             if np.random.uniform() <= mosquitoInfectionProb:
@@ -227,6 +245,27 @@ class Human:
         """
         self.position = [x, y]
         self.state = state    
+        self.infected = False
+        self.daysInfected = 0
+        self.humanInfected()
+        
+    def humanResistance(self, illnessContagiousTime):
+        if self.daysInfected >= illnessContagiousTime:
+            self.state = 'R'
+            return True
+        return False
+            
+    def humanSymptoms(self, illnessIncubationTime):
+        if self.daysInfected >= illnessIncubationTime:
+            self.state = 'I'
+            return True
+        return False
+    
+    def humanInfected(self):
+        if self.state == 'I':
+            self.infected = True
+            return True
+        return False
       
         # TODO: people can't die atm
         # TODO: Their is no way for people to get immune
@@ -237,18 +276,18 @@ if __name__ == '__main__':
     # Simulation parameters
     fileName = 'simulation'
     # Amount of days
-    timeSteps = 10
+    timeSteps = 50
     t = 0
     plotData = True
     
     # Run a simulation for an indicated number of timesteps.
     file = open(fileName + '.csv', 'w')
-    sim = Model(height=50, width=50)
+    sim = Model(height=50, width=50, humanPopDensity=0.1)
     vis = malaria_visualize.Visualization(sim.height, sim.width)
     print('Starting simulation')
     while t < timeSteps:
-        [d1, d2] = sim.update()  # Catch the data
-        line = str(t) + ',' + str(d1) + ',' + str(d2) + '\n'  # Separate the data with commas
+        [d1, d2, d3] = sim.update()  # Catch the data
+        line = str(t) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
         file.write(line)  # Write the data to a .csv file
         vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
         t += 1
@@ -261,8 +300,10 @@ if __name__ == '__main__':
         time = data[:, 0]
         infectedCount = data[:, 1]
         deathCount = data[:, 2]
+        resistCount = data[:, 3]
         plt.figure()
         plt.plot(time, infectedCount, label='infected')
         plt.plot(time, deathCount, label='deaths')
+        plt.plot(time, resistCount, label='resisted')
         plt.legend()
         plt.show()
