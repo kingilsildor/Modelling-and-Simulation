@@ -3,9 +3,9 @@ import numpy as np
 import malaria_visualize
 
 class Model:
-    def __init__(self, width=50, height=50, nHuman=100, nMosquito=50,
+    def __init__(self, width=50, height=50, mosquitoPopDensity=0.35, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
-                 humanInfectionProb=0.25, humanImmuneProb=0.001, humanReInfectionProb=0.15,
+                 humanInfectionProb=0.25, humanImmuneProb=0.01, humanReInfectionProb=0.15,
                  illnessDeathProb=0.03, illnessIncubationTime=4, illnessContagiousTime = 30,
                  mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
                  mosquitoFeedingCycle=15, biteProb=1.0):
@@ -15,8 +15,8 @@ class Model:
         """
         self.height = height
         self.width = width
-        self.nHuman = nHuman
-        self.nMosquito = nMosquito
+        self.nHuman = int(width * height * humanPopDensity)
+        self.nMosquito = int(width * height * mosquitoPopDensity * humanPopDensity)
         self.humanInfectionProb = humanInfectionProb
         self.humanImmuneProb = humanImmuneProb
         self.humanReInfectionProb = humanReInfectionProb
