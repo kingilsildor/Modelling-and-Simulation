@@ -5,7 +5,7 @@ import malaria_visualize
 class Model:
     def __init__(self, width=50, height=50, mosquitoPopDensity=0.35, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
-                 humanInfectionProb=0.90, humanImmuneProb=0.01, humanReInfectionProb=0.15,
+                 humanInfectionProb=0.90, humanImmuneProb=0.01, humanReInfectionProb=0.30,
                  illnessDeathProb=0.0354, illnessIncubationTime=4, illnessContagiousTime = 30,
                  mosquitoInfectionProb=0.65, mosquitoMinage = 21, mosquitoMaxage = 31,
                  mosquitoFeedingCycle=7, biteProb=1.0, prevention=None):
@@ -144,9 +144,6 @@ class Model:
                 m.indivualDeathProb += 0.001
         
         def new_person_born(h):
-            if h.state == 'R':
-                print(h.state)
-                self.resistCount -=1
             self.humanCoordinates.remove(h.position)
             self.humanPopulation.remove(h)
             x, y, state = self.create_new_human(-1, self.humanCoordinates)
@@ -158,16 +155,15 @@ class Model:
         for i, m in enumerate(self.mosquitoPopulation):
             m.move(self.height, self.width)
             for h in self.humanPopulation:
-                status = False
-                if h.state == 'R':
-                    status = True
                 if m.position == h.position and m.hungry\
                    and np.random.uniform() <= self.biteProb:
-                    if m.bite(h, self.humanInfectionProb, self.humanReInfectionProb,
-                           self.mosquitoInfectionProb):
+                    answer, extra = m.bite(h, self.humanInfectionProb, self.humanReInfectionProb,
+                           self.mosquitoInfectionProb)
+                    if answer:
                         self.infectedCount += 1
-                        if status and h.state == 'I':
-                            self.resistCount -=1
+                        if extra:
+                            print('omg het werkt')
+                            self.resistCount -= 1
                             
                         
             set_mosquito_hungry(m)
@@ -236,12 +232,13 @@ class Mosquito:
             if np.random.uniform() <= humanReInfectionProb:
                 human.infected = True
                 humanInfected = True
+                return humanInfected, True
         elif not self.infected and human.state == 'I':
             if np.random.uniform() <= mosquitoInfectionProb:
                 self.infected = True
         self.hungry = False
         
-        return humanInfected
+        return humanInfected, False
 
     def move(self, height, width):
         """
@@ -299,10 +296,6 @@ class Human:
             return True
         return False
       
-        # TODO: people can't die atm
-        # TODO: Their is no way for people to get immune
-        # TODO: New people aren't born
-
 
 class Prevention:
     def __init__(self, netsPercentage=0, sprayPercentage=0, windowNetsPercentage=0, vaccinePercentage=0):
@@ -323,6 +316,7 @@ class Prevention:
         """
         Method to get the prevention probability.
         """
+        print(self.totalPreventionProbability)
         return self.totalPreventionProbability
 
     
@@ -330,6 +324,7 @@ class Prevention:
         """
         Method to get the death rate probability.
         """
+        print(self.deathRateProbability)
         return self.deathRateProbability
 
 
@@ -342,7 +337,7 @@ if __name__ == '__main__':
         # Simulation parameters
         fileName = f'simulation_{i}'
         # Amount of days
-        timeSteps = 365*1
+        timeSteps = 365*2
         t = 0
         plotData = True
         population = 214028302
@@ -371,16 +366,31 @@ if __name__ == '__main__':
         data = np.loadtxt('simulation_no_intervention'+'.csv', delimiter=',')
         data2 = np.loadtxt(fileName+'.csv', delimiter=',')
         time = data[:, 0]
+
         infectedCount_no = data[:, 1]
         infectedCount_with = data2[:, 1]
-        
+
         deathCount = data[:, 2]
-        resistCount = data[:, 3]
-        
+
+        resistCount_no = data[:, 3]
+        resistCount_with = data2[:, 3]
+
+        bar_width = 0.35  
+        bar_positions_no = np.arange(len(time))
+        bar_positions_with = bar_positions_no + bar_width
 
         plt.figure()
-        plt.bar(time, infectedCount_no, label='infected no intervention')
-        plt.bar(time, infectedCount_with, label='infected no intervention')
+        plt.bar(bar_positions_no, infectedCount_no, width=bar_width, label='Infected no intervention')
+        plt.bar(bar_positions_with, infectedCount_with, width=bar_width, label='Infected with intervention')
+        plt.xlabel('Week')
+        plt.ylabel('Population Nigeria')
+        plt.legend()
+        plt.show()
+
+
+        plt.figure()
+        plt.bar(bar_positions_no, resistCount_no, width=bar_width, label='Resistant no intervention')
+        plt.bar(bar_positions_with, resistCount_with, width=bar_width, label='Resistant with intervention')
         plt.xlabel('Week')
         plt.ylabel('Population Nigeria')    
         plt.legend()
