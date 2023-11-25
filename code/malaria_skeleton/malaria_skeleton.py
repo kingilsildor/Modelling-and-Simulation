@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import malaria_visualize
 
+time_interval = 7
+
 class Model:
     def __init__(self, width=50, height=50, mosquitoPopDensity=0.35, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
@@ -63,9 +65,11 @@ class Model:
         return humanPopulation, humanCoordinates
 
     def create_new_human(self, i, humanCoordinates, initHumanInfected=0.2):
-        """ Initial create new humans based on the starting condition of the simulation.
+        """ 
+        Initial create new humans based on the starting condition of the simulation.
         Afterwards it will be used to create new humans after a human dies.
-        For this i=-1 is used to better handle the random infection at birth."""
+        For this i=-1 is used to better handle the random infection at birth.
+        """
         x = np.random.randint(self.width)
         y = np.random.randint(self.height)
         
@@ -99,9 +103,11 @@ class Model:
         return mosquitoPopulation
     
     def create_new_mosquito(self, i, initMosquitoHungry=0.5):
-        """ Initial create new mosquito based on the starting condition of the simulation.
+        """
+        Initial create new mosquito based on the starting condition of the simulation.
         Afterwards it will be used to create new mosquito after a mosquito dies.
-        For this i=-1 is used to better handle the random hungry at birth."""              
+        For this i=-1 is used to better handle the random hungry at birth.
+        """
         x = np.random.randint(self.width)
         y = np.random.randint(self.height)
         if (i / self.nMosquito) <= initMosquitoHungry:
@@ -124,7 +130,9 @@ class Model:
         """
         
         def set_mosquito_hungry(m):
-            """ Set the hungry state from False to True after a number of time steps has passed."""
+            """
+            Set the hungry state from False to True after a number of time steps has passed.
+            """
             if not m.hungry:
                 m.daysNotHungry += 1
             
@@ -133,6 +141,12 @@ class Model:
                 m.hungry = True
         
         def mosquito_live_cycle(m):
+            """
+            Update the mosquito age unit.
+            If the mosquito's age exceeds a certain threshold, or if a random value is less than
+            or equal to the individual death probability 
+            of the mosquito, the mosquito is removed from the population.
+            """
             m.age += 1
           
             if (m.age >= self.mosquitoMinage and np.random.uniform() <= m.indivualDeathProb) or\
@@ -144,6 +158,9 @@ class Model:
                 m.indivualDeathProb += 0.001
         
         def new_person_born(h):
+            """
+            Create new human when a human dies, so the population stays stable.
+            """
             self.humanCoordinates.remove(h.position)
             self.humanPopulation.remove(h)
             x, y, state = self.create_new_human(-1, self.humanCoordinates)
@@ -163,8 +180,6 @@ class Model:
                         self.infectedCount += 1
                         if extra:
                             self.resistCount -= 1
-                            
-                        
             set_mosquito_hungry(m)
             mosquito_live_cycle(m)
 
@@ -173,7 +188,7 @@ class Model:
             if h.infected:
                 h.daysInfected += 1
                 
-                if h.state != 'R' and (h.humanResistance(self.illnessContagiousTime)):
+                if h.state != 'R' and (h.humanRecovering(self.illnessContagiousTime)):
                     if h.state == 'R':
                         self.resistCount += 1
                 
@@ -183,15 +198,7 @@ class Model:
                 self.deathCount += 1
                 new_person_born(h)
                 
-                
-        """
-        To implement: update the human population.
-        """
-        """
-        To implement: update the data/statistics e.g. infectedCount,
-                      deathCount, etc.
-        """
-        if self.N % 7 == 0 and not self.N == 0:
+        if self.N % time_interval == 0 and not self.N == 0:
             self.infectedCount = 0
             self.deathCount = 0
 
@@ -272,7 +279,11 @@ class Human:
     def __str__(self):
         return f"Human(position={self.position}, state={self.state})"
         
-    def humanResistance(self, illnessContagiousTime):
+    def humanRecovering(self, illnessContagiousTime):
+        """
+        After the illness contagious time set the status of a person
+        to resistance or susceptible based on a 50/50 change.
+        """
         if self.daysInfected >= illnessContagiousTime:
             self.infected = False
             self.daysInfected = 0
@@ -284,12 +295,18 @@ class Human:
         return False
             
     def humanSymptoms(self, illnessIncubationTime):
+        """
+        After incubation time set person status to infected
+        """
         if self.daysInfected >= illnessIncubationTime:
             self.state = 'I'
             return True
         return False
     
     def humanInfected(self):
+        """
+        Function set infected True for initial infected population.
+        """
         if self.state == 'I':
             self.infected = True
             return True
@@ -352,8 +369,8 @@ if __name__ == '__main__':
         print('Starting simulation')
         while t < timeSteps:
             [d1, d2, d3] = sim.update()  # Catch the data
-            if t % 7 == 0 and not t == 0:
-                line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
+            if t % time_interval == 0 and not t == 0:
+                line = str( t / time_interval) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
                 file.write(line)  # Write the data to a .csv file
             vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
             t += 1
