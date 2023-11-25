@@ -133,6 +133,7 @@ class Model:
                 m.hungry = True
         
         def mosquito_live_cycle(m):
+            """Mosquitos live around three weeks, this function removes a mosquito around the time he would naturally perish."""
             m.age += 1
           
             if (m.age >= self.mosquitoMinage and np.random.uniform() <= m.indivualDeathProb) or\
@@ -144,6 +145,7 @@ class Model:
                 m.indivualDeathProb += 0.001
         
         def new_person_born(h):
+            """When a person dies of malaria the person gets removed and a new person spawns in the grid."""
             self.humanCoordinates.remove(h.position)
             self.humanPopulation.remove(h)
             x, y, state = self.create_new_human(-1, self.humanCoordinates)
@@ -152,6 +154,7 @@ class Model:
             self.humanCoordinates.append([x,y])
         
         
+        """When a mosquito and a person are on the same coordinates there is a probability the mosquito bites the person and one of the two gets infected"""
         for i, m in enumerate(self.mosquitoPopulation):
             m.move(self.height, self.width)
             for h in self.humanPopulation:
@@ -168,7 +171,7 @@ class Model:
             set_mosquito_hungry(m)
             mosquito_live_cycle(m)
 
-        
+        """There is a probability an infected person is getting better from malaria and gains a form of immunity."""
         for h in self.humanPopulation:
             if h.infected:
                 h.daysInfected += 1
@@ -185,11 +188,7 @@ class Model:
                 
                 
         """
-        To implement: update the human population.
-        """
-        """
-        To implement: update the data/statistics e.g. infectedCount,
-                      deathCount, etc.
+        Every week the infected people and deceased get counted.
         """
         if self.N % 7 == 0 and not self.N == 0:
             self.infectedCount = 0
@@ -273,6 +272,7 @@ class Human:
         return f"Human(position={self.position}, state={self.state})"
         
     def humanResistance(self, illnessContagiousTime):
+        """Function to maybe gain partial immunity."""
         if self.daysInfected >= illnessContagiousTime:
             self.infected = False
             self.daysInfected = 0
@@ -284,12 +284,14 @@ class Human:
         return False
             
     def humanSymptoms(self, illnessIncubationTime):
+        """When bitting by mosquito the person doesn't become infected right away there is an incubation period."""
         if self.daysInfected >= illnessIncubationTime:
             self.state = 'I'
             return True
         return False
     
     def humanInfected(self):
+        """Infects human"""
         if self.state == 'I':
             self.infected = True
             return True
@@ -330,13 +332,32 @@ class Prevention:
     
 
 if __name__ == '__main__':
+    # Run a simulation for an indicated number of timesteps.
+    t = 0
+    # amount of days
+    timeSteps = 365*1
+    file = open('simulation_current'+'.csv', 'w')
+    prevention_instance = Prevention(netsPercentage=0.54, sprayPercentage=0.41, windowNetsPercentage=0.01, vaccinePercentage=0.02)
+    sim = Model(height=50, width=50, humanPopDensity=0.1, prevention=prevention_instance)
+    vis = malaria_visualize.Visualization(sim.height, sim.width)
+    print('Starting simulation')
+    while t < timeSteps:
+        [d1, d2, d3] = sim.update()  # Catch the data
+        if t % 7 == 0 and not t == 0:
+            line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
+            file.write(line)  # Write the data to a .csv file
+        vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
+        t += 1
+    file.close()
+    vis.persist()
+
+
+
     simulations = [x/100 for x in range(0,110,25)] 
 
     for i in simulations:
         # Simulation parameters
         fileName = f'simulation_{int(i*100)}'
-        # Amount of days
-        timeSteps = 365*1
         t = 0
         plotData = True
         population = 214028302
@@ -357,23 +378,10 @@ if __name__ == '__main__':
         file.close()
         vis.persist()
     
-    # Run a simulation for an indicated number of timesteps.
-    file = open('simulation_current'+'.csv', 'w')
-    prevention_instance = Prevention(netsPercentage=0.54, sprayPercentage=0.41, windowNetsPercentage=0.01, vaccinePercentage=0.02)
-    sim = Model(height=50, width=50, humanPopDensity=0.1, prevention=prevention_instance)
-    vis = malaria_visualize.Visualization(sim.height, sim.width)
-    print('Starting simulation')
-    while t < timeSteps:
-        [d1, d2, d3] = sim.update()  # Catch the data
-        if t % 7 == 0 and not t == 0:
-            line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
-            file.write(line)  # Write the data to a .csv file
-        vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
-        t += 1
-    file.close()
-    vis.persist()
+    
 
     if plotData:
+        """Makes plot for current intervention vs no intervention"""
         # Make a plot by from the stored simulation data.
         data = np.loadtxt('simulation_0'+'.csv', delimiter=',')
         data2 = np.loadtxt('simulation_current'+'.csv', delimiter=',')
@@ -381,8 +389,6 @@ if __name__ == '__main__':
 
         infectedCount_no = data[:, 1]
         infectedCount_with = data2[:, 1]
-
-        deathCount = data[:, 2]
 
         resistCount_no = data[:, 3]
         resistCount_with = data2[:, 3]
@@ -408,7 +414,9 @@ if __name__ == '__main__':
         plt.legend()
         plt.show()
 
-        import plotly.graph_objects as go
+        import plotly.graph_objects as go 
+
+        """Experiment with different percentages of intervention, sleeping nets, IRS and window nets."""
         fig = go.Figure()
 
         for i in simulations:
