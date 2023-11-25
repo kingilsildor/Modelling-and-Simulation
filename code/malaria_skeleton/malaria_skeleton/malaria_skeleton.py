@@ -6,8 +6,8 @@ class Model:
     def __init__(self, width=50, height=50, mosquitoPopDensity=0.35, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
                  humanInfectionProb=0.90, humanImmuneProb=0.01, humanReInfectionProb=0.15,
-                 illnessDeathProb=0.03, illnessIncubationTime=4, illnessContagiousTime = 30,
-                 mosquitoInfectionProb=0.9, mosquitoMinage = 21, mosquitoMaxage = 31,
+                 illnessDeathProb=0.0354, illnessIncubationTime=4, illnessContagiousTime = 30,
+                 mosquitoInfectionProb=0.65, mosquitoMinage = 21, mosquitoMaxage = 31,
                  mosquitoFeedingCycle=7, biteProb=1.0, prevention=None):
         """
         Model parameters
@@ -145,6 +145,7 @@ class Model:
         
         def new_person_born(h):
             if h.state == 'R':
+                print(h.state)
                 self.resistCount -=1
             self.humanCoordinates.remove(h.position)
             self.humanPopulation.remove(h)
@@ -157,11 +158,18 @@ class Model:
         for i, m in enumerate(self.mosquitoPopulation):
             m.move(self.height, self.width)
             for h in self.humanPopulation:
+                status = False
+                if h.state == 'R':
+                    status = True
                 if m.position == h.position and m.hungry\
                    and np.random.uniform() <= self.biteProb:
                     if m.bite(h, self.humanInfectionProb, self.humanReInfectionProb,
                            self.mosquitoInfectionProb):
                         self.infectedCount += 1
+                        if status and h.state == 'I':
+                            self.resistCount -=1
+                            
+                        
             set_mosquito_hungry(m)
             mosquito_live_cycle(m)
 
@@ -170,12 +178,13 @@ class Model:
             if h.infected:
                 h.daysInfected += 1
                 
-            if (h.humanResistance(self.illnessContagiousTime)):
-                self.resistCount += 1
+                if h.state != 'R' and (h.humanResistance(self.illnessContagiousTime)):
+                    if h.state == 'R':
+                        self.resistCount += 1
                 
             h.humanSymptoms(self.illnessIncubationTime)
                             
-            if np.random.uniform() <= self.illnessDeathProb and h.state == 'I':
+            if np.random.uniform() <= self.illnessDeathProb/365 and h.state == 'I':
                 self.deathCount += 1
                 new_person_born(h)
                 
@@ -187,7 +196,7 @@ class Model:
         To implement: update the data/statistics e.g. infectedCount,
                       deathCount, etc.
         """
-        if self.N % 7 and not self.N == 0:
+        if self.N % 7 == 0 and not self.N == 0:
             self.infectedCount = 0
             self.deathCount = 0
 
@@ -327,45 +336,55 @@ class Prevention:
     
 
 if __name__ == '__main__':
-    # Simulation parameters
-    fileName = 'simulation'
-    # Amount of days
-    timeSteps = 365*2
-    t = 0
-    plotData = True
-    population = 214028302
-    
-    # Run a simulation for an indicated number of timesteps.
-    file = open(fileName + '.csv', 'w')
-    prevention_instance = Prevention(netsPercentage=0.54, sprayPercentage=0.41, windowNetsPercentage=0.01, vaccinePercentage=0.02)
-    sim = Model(height=50, width=50, humanPopDensity=0.1, prevention=prevention_instance)
-    vis = malaria_visualize.Visualization(sim.height, sim.width)
-    print('Starting simulation')
-    while t < timeSteps:
-        [d1, d2, d3] = sim.update()  # Catch the data
-        if t % 7 and not t == 0:
-            line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
-            file.write(line)  # Write the data to a .csv file
-        vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
-        t += 1
-    file.close()
-    vis.persist()
+    simulations = ['no_intervention', 'current intervention']
+
+    for i in simulations:
+        # Simulation parameters
+        fileName = f'simulation_{i}'
+        # Amount of days
+        timeSteps = 365*1
+        t = 0
+        plotData = True
+        population = 214028302
+        
+        # Run a simulation for an indicated number of timesteps.
+        file = open(fileName + '.csv', 'w')
+        if i == 'current intervention':
+            prevention_instance = Prevention(netsPercentage=0.54, sprayPercentage=0.41, windowNetsPercentage=0.01, vaccinePercentage=0.02)
+        else:
+            prevention_instance = Prevention()
+        sim = Model(height=50, width=50, humanPopDensity=0.1, prevention=prevention_instance)
+        vis = malaria_visualize.Visualization(sim.height, sim.width)
+        print('Starting simulation')
+        while t < timeSteps:
+            [d1, d2, d3] = sim.update()  # Catch the data
+            if t % 7 == 0 and not t == 0:
+                line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
+                file.write(line)  # Write the data to a .csv file
+            vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
+            t += 1
+        file.close()
+        vis.persist()
 
     if plotData:
         # Make a plot by from the stored simulation data.
-        data = np.loadtxt(fileName+'.csv', delimiter=',')
+        data = np.loadtxt('simulation_no_intervention'+'.csv', delimiter=',')
+        data2 = np.loadtxt(fileName+'.csv', delimiter=',')
         time = data[:, 0]
-        infectedCount = data[:, 1]
+        infectedCount_no = data[:, 1]
+        infectedCount_with = data2[:, 1]
+        
         deathCount = data[:, 2]
         resistCount = data[:, 3]
+        
 
-        for x, label in zip([infectedCount, deathCount, resistCount], ['infected', 'deaths', 'resisted']):
-            plt.figure()
-            plt.bar(time, x, label=label)
-            plt.xlabel('Week')
-            plt.ylabel('Population Nigeria')    
-            plt.legend()
-            plt.show()
+        plt.figure()
+        plt.bar(time, infectedCount_no, label='infected no intervention')
+        plt.bar(time, infectedCount_with, label='infected no intervention')
+        plt.xlabel('Week')
+        plt.ylabel('Population Nigeria')    
+        plt.legend()
+        plt.show()
 
 
         
