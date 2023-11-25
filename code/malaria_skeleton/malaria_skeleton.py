@@ -344,8 +344,6 @@ class Prevention:
         return self.deathRateProbability
 
 
-    
-
 if __name__ == '__main__':
     simulations = ['no_intervention', 'current intervention']
 
@@ -356,6 +354,7 @@ if __name__ == '__main__':
         timeSteps = 365*2
         t = 0
         plotData = True
+        # Nigerian population
         population = 214028302
         
         # Run a simulation for an indicated number of timesteps.
@@ -370,7 +369,7 @@ if __name__ == '__main__':
         while t < timeSteps:
             [d1, d2, d3] = sim.update()  # Catch the data
             if t % time_interval == 0 and not t == 0:
-                line = str( t / time_interval) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
+                line = str( t / time_interval) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n' # Separate the data with commas
                 file.write(line)  # Write the data to a .csv file
             vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
             t += 1
@@ -391,7 +390,7 @@ if __name__ == '__main__':
         resistCount_no = data[:, 3]
         resistCount_with = data2[:, 3]
 
-        bar_width = 0.35  
+        bar_width = 0.35
         bar_positions_no = np.arange(len(time))
         bar_positions_with = bar_positions_no + bar_width
 
@@ -408,9 +407,6 @@ if __name__ == '__main__':
         plt.bar(bar_positions_no, resistCount_no, width=bar_width, label='Resistant no intervention')
         plt.bar(bar_positions_with, resistCount_with, width=bar_width, label='Resistant with intervention')
         plt.xlabel('Week')
-        plt.ylabel('Population Nigeria')    
+        plt.ylabel('Population Nigeria')
         plt.legend()
         plt.show()
-
-
-        
