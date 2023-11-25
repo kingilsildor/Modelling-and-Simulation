@@ -5,22 +5,22 @@ import malaria_visualize
 class Model:
     def __init__(self, width=50, height=50, mosquitoPopDensity=0.35, humanPopDensity=0.23,
                  initMosquitoHungry=0.5, initHumanInfected=0.2,
-                 humanInfectionProb=0.25, humanImmuneProb=0.01, humanReInfectionProb=0.15,
+                 humanInfectionProb=0.90, humanImmuneProb=0.01, humanReInfectionProb=0.15,
                  illnessDeathProb=0.03, illnessIncubationTime=4, illnessContagiousTime = 30,
-                 mosquitoInfectionProb=0.9, mosquitoMinage = 14, mosquitoMaxage = 65,
-                 mosquitoFeedingCycle=15, biteProb=1.0):
+                 mosquitoInfectionProb=0.9, mosquitoMinage = 21, mosquitoMaxage = 31,
+                 mosquitoFeedingCycle=7, biteProb=1.0, prevention=None):
         """
         Model parameters
         Initialize the model with the width and height parameters.
         """
         self.height = height
         self.width = width
-        self.nHuman = int(width * height * humanPopDensity)
-        self.nMosquito = int(width * height * mosquitoPopDensity * humanPopDensity)
-        self.humanInfectionProb = humanInfectionProb
+        self.nHuman = int(width * height * humanPopDensity * 12)
+        self.nMosquito = int(width * height * mosquitoPopDensity * humanPopDensity * 12)
+        self.humanInfectionProb = humanInfectionProb - prevention.get_prevention_probability()
         self.humanImmuneProb = humanImmuneProb
         self.humanReInfectionProb = humanReInfectionProb
-        self.illnessDeathProb = illnessDeathProb
+        self.illnessDeathProb = illnessDeathProb - prevention.get_deathrate_probability()
         self.illnessIncubationTime = illnessIncubationTime
         self.illnessContagiousTime = illnessContagiousTime
         self.mosquitoInfectionProb = mosquitoInfectionProb
@@ -36,6 +36,7 @@ class Model:
         self.infectedCount = 0
         self.deathCount = 0
         self.resistCount = 0
+        self.N = -1
 
         """
         Population setters
@@ -43,6 +44,7 @@ class Model:
         """
         self.humanPopulation, self.humanCoordinates = self.set_human_population(initHumanInfected)
         self.mosquitoPopulation = self.set_mosquito_population(initMosquitoHungry)
+    
     
     def set_human_population(self, initHumanInfected):
         """
@@ -135,13 +137,15 @@ class Model:
           
             if (m.age >= self.mosquitoMinage and np.random.uniform() <= m.indivualDeathProb) or\
                 (m.age >= self.mosquitoMaxage):
-                self.mosquitoPopulation.remove(h)
+                self.mosquitoPopulation.remove(m)
                 x, y, hungry = self.create_new_mosquito(-1)
                 self.mosquitoPopulation.append(Mosquito(x, y, hungry))
             else:
                 m.indivualDeathProb += 0.001
         
         def new_person_born(h):
+            if h.state == 'R':
+                self.resistCount -=1
             self.humanCoordinates.remove(h.position)
             self.humanPopulation.remove(h)
             x, y, state = self.create_new_human(-1, self.humanCoordinates)
@@ -159,21 +163,21 @@ class Model:
                            self.mosquitoInfectionProb):
                         self.infectedCount += 1
             set_mosquito_hungry(m)
-            # let_mosquito_live_cycle(m)
+            mosquito_live_cycle(m)
 
-        for j, h in enumerate(self.humanPopulation):
-            for h in self.humanPopulation:
-                if h.infected:
-                    h.daysInfected += 1
-                    
-                if (h.humanResistance(self.illnessContagiousTime)):
-                    self.resistCount += 1
-                    
-                h.humanSymptoms(self.illnessIncubationTime)
-                                
-                if np.random.uniform() <= self.illnessDeathProb and h.state == 'I':
-                    self.deathCount += 1
-                    new_person_born(h)
+        
+        for h in self.humanPopulation:
+            if h.infected:
+                h.daysInfected += 1
+                
+            if (h.humanResistance(self.illnessContagiousTime)):
+                self.resistCount += 1
+                
+            h.humanSymptoms(self.illnessIncubationTime)
+                            
+            if np.random.uniform() <= self.illnessDeathProb and h.state == 'I':
+                self.deathCount += 1
+                new_person_born(h)
                 
                 
         """
@@ -183,7 +187,13 @@ class Model:
         To implement: update the data/statistics e.g. infectedCount,
                       deathCount, etc.
         """
-        return self.infectedCount, self.deathCount, self.resistCount
+        if self.N % 7 and not self.N == 0:
+            self.infectedCount = 0
+            self.deathCount = 0
+
+        self.N +=1
+
+        return self.infectedCount/self.nHuman, self.deathCount/self.nHuman, self.resistCount/self.nHuman
 
 
 class Mosquito:
@@ -253,12 +263,18 @@ class Human:
         self.infected = False
         self.daysInfected = 0
         self.humanInfected()
+
+    def __str__(self):
+        return f"Human(position={self.position}, state={self.state})"
         
     def humanResistance(self, illnessContagiousTime):
         if self.daysInfected >= illnessContagiousTime:
             self.infected = False
             self.daysInfected = 0
-            self.state = 'R'
+            if np.random.uniform() <= 0.5:
+                self.state = 'R'
+            else:
+                self.state = 'S'
             return True
         return False
             
@@ -279,23 +295,57 @@ class Human:
         # TODO: New people aren't born
 
 
+class Prevention:
+    def __init__(self, netsPercentage=0, sprayPercentage=0, windowNetsPercentage=0, vaccinePercentage=0):
+        """
+        Class to model the prevention methods. Each method is initialized with a use case probability. 
+        Humans can start out with different no, one or more methods.
+        """
+        self.netsProbability = 0.3 * (7.5 / 24) * netsPercentage
+        self.sprayProbability = 0.35 * (3.5 / 24) * sprayPercentage
+        self.windowNetsProbability = 0.65 * (3.5 / 24) * windowNetsPercentage
+
+        self.vaccineProbability = 0.3 * vaccinePercentage
+
+        self.totalPreventionProbability = self.netsProbability + self.sprayProbability + self.windowNetsProbability
+        self.deathRateProbability = self.vaccineProbability
+    
+    def get_prevention_probability(self):
+        """
+        Method to get the prevention probability.
+        """
+        return self.totalPreventionProbability
+
+    
+    def get_deathrate_probability(self):
+        """
+        Method to get the death rate probability.
+        """
+        return self.deathRateProbability
+
+
+    
+
 if __name__ == '__main__':
     # Simulation parameters
     fileName = 'simulation'
     # Amount of days
-    timeSteps = 50
+    timeSteps = 365*2
     t = 0
     plotData = True
+    population = 214028302
     
     # Run a simulation for an indicated number of timesteps.
     file = open(fileName + '.csv', 'w')
-    sim = Model(height=50, width=50, humanPopDensity=0.1)
+    prevention_instance = Prevention(netsPercentage=0.54, sprayPercentage=0.41, windowNetsPercentage=0.01, vaccinePercentage=0.02)
+    sim = Model(height=50, width=50, humanPopDensity=0.1, prevention=prevention_instance)
     vis = malaria_visualize.Visualization(sim.height, sim.width)
     print('Starting simulation')
     while t < timeSteps:
         [d1, d2, d3] = sim.update()  # Catch the data
-        line = str(t) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
-        file.write(line)  # Write the data to a .csv file
+        if t % 7 and not t == 0:
+            line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
+            file.write(line)  # Write the data to a .csv file
         vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
         t += 1
     file.close()
@@ -308,9 +358,14 @@ if __name__ == '__main__':
         infectedCount = data[:, 1]
         deathCount = data[:, 2]
         resistCount = data[:, 3]
-        plt.figure()
-        plt.plot(time, infectedCount, label='infected')
-        plt.plot(time, deathCount, label='deaths')
-        plt.plot(time, resistCount, label='resisted')
-        plt.legend()
-        plt.show()
+
+        for x, label in zip([infectedCount, deathCount, resistCount], ['infected', 'deaths', 'resisted']):
+            plt.figure()
+            plt.bar(time, x, label=label)
+            plt.xlabel('Week')
+            plt.ylabel('Population Nigeria')    
+            plt.legend()
+            plt.show()
+
+
+        
