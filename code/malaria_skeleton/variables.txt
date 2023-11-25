@@ -114,11 +114,14 @@ extra_no_nets = round((cases_no_nets / effect_nets) - cases_no_nets)
 cases_no_spray = cases * spray * (athome / 24) 
 extra_no_spray = round((cases_no_spray / effect_spray) - cases_no_spray)
 
+cases_window_nets = cases * windownets * (athome / 24) 
+extra_window_nets = round((cases_window_nets / effect_window_nets) - cases_window_nets)
+
 cases_no_meds_vacs = deaths * vaccine_med 
 extra_no_meds_vacs = round((cases_no_meds_vacs / med_vacs) - cases_no_meds_vacs)
 
 real_death_rate = (deaths + extra_no_meds_vacs) / cases
-real_cases = round(cases + extra_no_nets + extra_no_spray)
+real_cases = round(cases + extra_no_nets + extra_no_spray + extra_window_nets)
 real_deaths = round(real_cases * real_death_rate)
 
 
