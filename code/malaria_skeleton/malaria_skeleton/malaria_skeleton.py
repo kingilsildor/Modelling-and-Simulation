@@ -162,7 +162,6 @@ class Model:
                     if answer:
                         self.infectedCount += 1
                         if extra:
-                            print('omg het werkt')
                             self.resistCount -= 1
                             
                         
