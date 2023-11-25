@@ -330,23 +330,20 @@ class Prevention:
     
 
 if __name__ == '__main__':
-    simulations = ['no_intervention', 'current intervention']
+    simulations = [x/100 for x in range(0,110,25)] 
 
     for i in simulations:
         # Simulation parameters
-        fileName = f'simulation_{i}'
+        fileName = f'simulation_{int(i*100)}'
         # Amount of days
-        timeSteps = 365*2
+        timeSteps = 365*1
         t = 0
         plotData = True
         population = 214028302
         
         # Run a simulation for an indicated number of timesteps.
         file = open(fileName + '.csv', 'w')
-        if i == 'current intervention':
-            prevention_instance = Prevention(netsPercentage=0.54, sprayPercentage=0.41, windowNetsPercentage=0.01, vaccinePercentage=0.02)
-        else:
-            prevention_instance = Prevention()
+        prevention_instance = Prevention(netsPercentage=i, sprayPercentage=i, windowNetsPercentage=i, vaccinePercentage=0.02)
         sim = Model(height=50, width=50, humanPopDensity=0.1, prevention=prevention_instance)
         vis = malaria_visualize.Visualization(sim.height, sim.width)
         print('Starting simulation')
@@ -359,11 +356,27 @@ if __name__ == '__main__':
             t += 1
         file.close()
         vis.persist()
+    
+    # Run a simulation for an indicated number of timesteps.
+    file = open('simulation_current'+'.csv', 'w')
+    prevention_instance = Prevention(netsPercentage=0.54, sprayPercentage=0.41, windowNetsPercentage=0.01, vaccinePercentage=0.02)
+    sim = Model(height=50, width=50, humanPopDensity=0.1, prevention=prevention_instance)
+    vis = malaria_visualize.Visualization(sim.height, sim.width)
+    print('Starting simulation')
+    while t < timeSteps:
+        [d1, d2, d3] = sim.update()  # Catch the data
+        if t % 7 == 0 and not t == 0:
+            line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
+            file.write(line)  # Write the data to a .csv file
+        vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
+        t += 1
+    file.close()
+    vis.persist()
 
     if plotData:
         # Make a plot by from the stored simulation data.
-        data = np.loadtxt('simulation_no_intervention'+'.csv', delimiter=',')
-        data2 = np.loadtxt(fileName+'.csv', delimiter=',')
+        data = np.loadtxt('simulation_0'+'.csv', delimiter=',')
+        data2 = np.loadtxt('simulation_current'+'.csv', delimiter=',')
         time = data[:, 0]
 
         infectedCount_no = data[:, 1]
@@ -394,6 +407,32 @@ if __name__ == '__main__':
         plt.ylabel('Population Nigeria')    
         plt.legend()
         plt.show()
+
+        import plotly.graph_objects as go
+        fig = go.Figure()
+
+        for i in simulations:
+            infected_count = np.loadtxt(f'simulation_{int(i*100)}'+'.csv', delimiter=',')[:,1]
+            fig.add_trace(go.Bar(
+                x=time,
+                y=infected_count,
+                name=f'Infected {int(i*100)}% intervention'
+            ))
+
+        fig.update_layout(
+            xaxis=dict(tickmode='array', tickvals=list(range(len(time))), ticktext=time),
+            yaxis=dict(title='Population Nigeria'),
+            barmode='group',
+            xaxis_tickangle=-45,
+            legend=dict(title='Simulations'),
+            title='Population Infections Over Weeks'
+        )
+
+        fig.show()
+
+
+
+
 
 
         
