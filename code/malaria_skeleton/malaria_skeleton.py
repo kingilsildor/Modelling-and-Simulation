@@ -154,7 +154,10 @@ class Model:
             self.humanCoordinates.append([x,y])
         
         
-        """When a mosquito and a person are on the same coordinates there is a probability the mosquito bites the person and one of the two gets infected"""
+        """
+        When a mosquito and a person are on the same coordinates there is a probability the 
+        mosquito bites the person and one of the two gets infected
+        """
         for i, m in enumerate(self.mosquitoPopulation):
             m.move(self.height, self.width)
             for h in self.humanPopulation:
@@ -263,7 +266,7 @@ class Human:
         (or immune).
         """
         self.position = [x, y]
-        self.state = state    
+        self.state = state
         self.infected = False
         self.daysInfected = 0
         self.humanInfected()
@@ -301,7 +304,7 @@ class Human:
 class Prevention:
     def __init__(self, netsPercentage=0, sprayPercentage=0, windowNetsPercentage=0, vaccinePercentage=0):
         """
-        Class to model the prevention methods. Each method is initialized with a use case probability. 
+        Class to model the prevention methods. Each method is initialized with a use case probability.
         Humans can start out with different no, one or more methods.
         """
         self.netsProbability = 0.3 * (7.5 / 24) * netsPercentage
@@ -329,8 +332,6 @@ class Prevention:
         return self.deathRateProbability
 
 
-    
-
 if __name__ == '__main__':
     # Run a simulation for an indicated number of timesteps.
     t = 0
@@ -342,10 +343,10 @@ if __name__ == '__main__':
     vis = malaria_visualize.Visualization(sim.height, sim.width)
     print('Starting simulation')
     while t < timeSteps:
-        [d1, d2, d3] = sim.update()  # Catch the data
+        [d1, d2, d3] = sim.update() # Catch the data
         if t % 7 == 0 and not t == 0:
-            line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n'  # Separate the data with commas
-            file.write(line)  # Write the data to a .csv file
+            line = str(t/7) + ',' + str(d1) + ',' + str(d2) + ',' + str(d3) + '\n' # Separate the data with commas
+            file.write(line) # Write the data to a .csv file
         vis.update(t, sim.mosquitoPopulation, sim.humanPopulation)
         t += 1
     file.close()
@@ -353,7 +354,7 @@ if __name__ == '__main__':
 
 
 
-    simulations = [x/100 for x in range(0,110,25)] 
+    simulations = [x/100 for x in range(0,110,25)]
 
     for i in simulations:
         # Simulation parameters
@@ -410,11 +411,11 @@ if __name__ == '__main__':
         plt.bar(bar_positions_no, resistCount_no, width=bar_width, label='Resistant no intervention')
         plt.bar(bar_positions_with, resistCount_with, width=bar_width, label='Resistant with intervention')
         plt.xlabel('Week')
-        plt.ylabel('Population Nigeria')    
+        plt.ylabel('Population Nigeria')
         plt.legend()
         plt.show()
 
-        import plotly.graph_objects as go 
+        import plotly.graph_objects as go
 
         """Experiment with different percentages of intervention, sleeping nets, IRS and window nets."""
         fig = go.Figure()
@@ -437,10 +438,3 @@ if __name__ == '__main__':
         )
 
         fig.show()
-
-
-
-
-
-
-        
